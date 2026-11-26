@@ -1,0 +1,74 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+}
+
+.label {
+  font-size: $fs-sm;
+  font-weight: $fw-medium;
+  color: var(--text-h);
+}
+
+.input,
+.textarea,
+.select {
+  width: 100%;
+  padding: $space-3 $space-4;
+  font-size: $fs-base;
+  line-height: $lh-normal;
+  color: var(--text-h);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  outline: none;
+  transition:
+    border-color $duration-fast $ease-default,
+    box-shadow $duration-fast $ease-default,
+    background $duration-fast $ease-default;
+
+  &::placeholder {
+    color: var(--text-muted);
+  }
+
+  &:hover {
+    border-color: var(--border-strong);
+  }
+
+  &:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+
+  &:disabled {
+    background: var(--bg-subtle);
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+}
+
+.textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.error {
+  border-color: var(--danger) !important;
+  &:focus {
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.12);
+  }
+}
+
+.errorText {
+  font-size: $fs-sm;
+  color: var(--danger);
+  margin-top: $space-1;
+}
+
+.hint {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+}

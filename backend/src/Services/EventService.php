@@ -40,6 +40,8 @@ class EventService
             'description' => trim($data['description']),
             'user_id' => $userId,
             'business_profile_id' => isset($data['business_profile_id']) ? (int) $data['business_profile_id'] : 0,
+            'create_date' => date('Y-m-d H:i:s'),
+            'last_update' => date('Y-m-d H:i:s'),
         ]);
     }
 
@@ -158,7 +160,7 @@ class EventService
     {
         // Check if already joined
         $count = $this->db->fetchColumn(
-            "SELECT COUNT(*) FROM outdoorbuddy_event_participants 
+            "SELECT COUNT(*) FROM outdoorbuddy_participants 
              WHERE event_id = ? AND user_id = ?",
             [$eventId, $userId]
         );
@@ -167,14 +169,11 @@ class EventService
             throw new BusinessLogicException('Already joined this event');
         }
 
-        try {
-            $this->db->insert('outdoorbuddy_event_participants', [
-                'event_id' => $eventId,
-                'user_id' => $userId,
-            ]);
-        } catch (\Exception $e) {
-            // Table might not exist yet - handle gracefully
-        }
+        $this->db->insert('outdoorbuddy_participants', [
+            'event_id' => $eventId,
+            'user_id' => $userId,
+            'datetime' => date('Y-m-d H:i:s'),
+        ]);
 
         return ['success' => true];
     }
@@ -185,7 +184,7 @@ class EventService
     public function getTotalParticipants(int $eventId): int
     {
         $count = $this->db->fetchColumn(
-            "SELECT COUNT(*) FROM outdoorbuddy_event_participants WHERE event_id = ?",
+            "SELECT COUNT(*) FROM outdoorbuddy_participants WHERE event_id = ?",
             [$eventId]
         );
         return (int) ($count ?: 0);
@@ -211,6 +210,7 @@ class EventService
                 $this->db->insert('outdoorbuddy_event_like', [
                     'user_id' => $userId,
                     'event_id' => (string) $eventId,
+                    'datetime' => date('Y-m-d H:i:s'),
                 ]);
             } catch (\Exception $e) {
                 throw new \RuntimeException('Failed to like event');

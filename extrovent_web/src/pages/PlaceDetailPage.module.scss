@@ -1,0 +1,71 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: $space-4;
+  &:hover { color: var(--accent); }
+}
+
+.card {
+  @include card(elevated);
+  overflow: hidden;
+  @include fade-in;
+}
+
+.header {
+  padding: $space-6;
+  border-bottom: 1px solid var(--border-subtle);
+
+  h1 {
+    margin: 0 0 $space-2;
+  }
+
+  .meta {
+    display: flex;
+    gap: $space-2;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+}
+
+.body {
+  padding: $space-6;
+
+  p {
+    color: var(--text);
+    line-height: $lh-relaxed;
+  }
+}
+
+.mapWrapper {
+  border-radius: $radius-lg;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: $shadow-sm;
+  margin-top: $space-4;
+}
+
+.emptyMap {
+  padding: $space-8;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--bg-subtle);
+  border: 1px dashed var(--border);
+  border-radius: $radius-lg;
+  font-size: $fs-sm;
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-4;
+  border-radius: $radius-md;
+  text-align: center;
+}

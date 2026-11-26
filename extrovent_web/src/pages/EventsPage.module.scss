@@ -1,0 +1,124 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.header {
+  margin-bottom: $space-6;
+  @include fade-in;
+}
+
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-4;
+  margin-bottom: $space-4;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0;
+  }
+}
+
+.tabs {
+  display: flex;
+  gap: $space-2;
+  padding: $space-1;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-full;
+  width: fit-content;
+}
+
+.tab {
+  padding: $space-2 $space-5;
+  border-radius: $radius-full;
+  font-size: $fs-sm;
+  font-weight: $fw-medium;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all $duration-fast $ease-default;
+
+  &:hover {
+    color: var(--text-h);
+    background: var(--bg-elevated);
+  }
+
+  &.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: $fw-semibold;
+    box-shadow: $shadow-sm;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: $space-4;
+  margin-top: $space-6;
+
+  @include respond(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.card {
+  @include card(elevated);
+  padding: $space-6;
+  text-decoration: none;
+  color: inherit;
+  display: flex;
+  flex-direction: column;
+  gap: $space-3;
+  @include fade-in;
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  @for $i from 1 through 6 {
+    &:nth-child(#{$i}) { animation-delay: #{$i * 50ms}; }
+  }
+}
+
+.cardTitle {
+  font-family: $font-heading;
+  font-weight: $fw-semibold;
+  font-size: $fs-lg;
+  color: var(--text-h);
+  line-height: $lh-snug;
+  margin: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+  margin-bottom: $space-6;
+}
+
+.breadcrumb {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  margin-bottom: $space-4;
+
+  &:hover { color: var(--accent); }
+}

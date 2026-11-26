@@ -1,0 +1,71 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: $font-heading;
+  font-weight: $fw-semibold;
+  color: var(--text-h);
+  line-height: $lh-tight;
+  letter-spacing: -0.02em;
+}
+
+h1 {
+  font-size: $fs-4xl;
+  letter-spacing: -0.03em;
+  margin: $space-8 0;
+
+  @include respond(lg) {
+    font-size: $fs-3xl;
+    margin: $space-6 0;
+  }
+
+  @include respond(sm) {
+    font-size: $fs-2xl;
+  }
+}
+
+h2 {
+  font-size: $fs-xl;
+  line-height: $lh-snug;
+  margin: 0 0 $space-3;
+
+  @include respond(lg) {
+    font-size: $fs-lg;
+  }
+}
+
+h3 {
+  font-size: $fs-lg;
+  margin: 0 0 $space-2;
+}
+
+p {
+  margin: 0;
+  line-height: $lh-relaxed;
+  color: var(--text);
+
+  + p {
+    margin-top: $space-4;
+  }
+}
+
+small {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+}
+
+code {
+  font-family: $font-mono;
+  font-size: $fs-sm;
+  line-height: 1.35;
+  padding: 3px 7px;
+  background: var(--code-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-sm;
+  color: var(--text-h);
+}
+
+strong {
+  font-weight: $fw-semibold;
+  color: var(--text-h);
+}

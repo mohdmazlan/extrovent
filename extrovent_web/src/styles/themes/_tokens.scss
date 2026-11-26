@@ -1,0 +1,68 @@
+@use '../abstracts/variables' as *;
+
+// ── Light theme (default) ──
+:root {
+  --bg: #ffffff;
+  --bg-elevated: #ffffff;
+  --bg-muted: #fdfbf7;
+  --bg-subtle: #f8f7f5;
+
+  --text: #6b6375;
+  --text-h: #1a1a1e;
+  --text-muted: #9ca3af;
+  --text-inverse: #ffffff;
+
+  --border: #e8e6dd;
+  --border-strong: #d4d0c4;
+  --border-subtle: #f0ede6;
+
+  --accent: #{$color-forest-700};
+  --accent-hover: #{$color-forest-900};
+  --accent-soft: #{rgba($color-forest-700, 0.08)};
+  --accent-ring: #{rgba($color-forest-500, 0.35)};
+  --accent-text: #ffffff;
+
+  --success: #2d6a4f;
+  --warning: #e76f51;
+  --danger: #c0392b;
+  --info: #264653;
+
+  --code-bg: #f4f3ec;
+  --social-bg: rgba(244, 243, 236, 0.5);
+
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+}
+
+// ── Dark theme ──
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111210;
+    --bg-elevated: #1c1e1b;
+    --bg-muted: #232622;
+    --bg-subtle: #1a1d1a;
+
+    --text: #a8a9a0;
+    --text-h: #f0ede6;
+    --text-muted: #7a7d75;
+    --text-inverse: #111210;
+
+    --border: #2e332b;
+    --border-strong: #3d4238;
+    --border-subtle: #232622;
+
+    --accent: #{$color-forest-300};
+    --accent-hover: #7bc8a0;
+    --accent-soft: #{rgba($color-forest-300, 0.12)};
+    --accent-ring: #{rgba($color-forest-300, 0.35)};
+    --accent-text: #0f2a1d;
+
+    --code-bg: #1f2420;
+    --social-bg: rgba(47, 48, 58, 0.5);
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}

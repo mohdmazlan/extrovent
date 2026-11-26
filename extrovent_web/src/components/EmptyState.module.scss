@@ -1,0 +1,41 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.empty {
+  text-align: center;
+  padding: $space-12 $space-6;
+  @include fade-in;
+
+  @include respond(sm) {
+    padding: $space-8 $space-4;
+  }
+}
+
+.icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto $space-4;
+  border-radius: $radius-full;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  font-size: $fs-2xl;
+  color: var(--text-muted);
+}
+
+.title {
+  font-family: $font-heading;
+  font-size: $fs-lg;
+  font-weight: $fw-semibold;
+  color: var(--text-h);
+  margin-bottom: $space-2;
+}
+
+.description {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  max-width: 380px;
+  margin: 0 auto $space-6;
+  line-height: $lh-relaxed;
+}

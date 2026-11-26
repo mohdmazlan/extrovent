@@ -1,0 +1,98 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: $space-4;
+  &:hover { color: var(--accent); }
+}
+
+.card {
+  @include card(elevated);
+  overflow: hidden;
+  max-width: 640px;
+  margin: 0 auto;
+  @include fade-in;
+}
+
+.cardHeader {
+  padding: $space-6;
+  @include forest-gradient;
+  color: white;
+  position: relative;
+
+  h1 {
+    color: white;
+    margin: 0 0 $space-2;
+    font-size: $fs-2xl;
+  }
+
+  p {
+    color: rgba(255,255,255,0.85);
+    font-size: $fs-sm;
+    margin: 0;
+  }
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(500px 200px at 90% 0%, rgba(255,255,255,0.08), transparent 60%);
+    pointer-events: none;
+  }
+}
+
+.form {
+  padding: $space-6;
+  display: grid;
+  gap: $space-4;
+
+  @include respond(sm) {
+    padding: $space-4;
+  }
+}
+
+.mapSection {
+  border: 1px solid var(--border);
+  border-radius: $radius-lg;
+  overflow: hidden;
+  box-shadow: $shadow-sm;
+}
+
+.mapHint {
+  padding: $space-3 $space-4;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+}
+
+.picked {
+  font-size: $fs-sm;
+  color: var(--accent);
+  font-weight: $fw-medium;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-ring);
+  padding: $space-2 $space-3;
+  border-radius: $radius-md;
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+}

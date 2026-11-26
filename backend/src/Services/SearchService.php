@@ -17,7 +17,7 @@ class SearchService
      */
     public function search(array $data): array
     {
-        $query = trim($data['query'] ?? '');
+        $query = trim($data['query'] ?? $data['q'] ?? $data['search'] ?? '');
 
         if (empty($query)) {
             throw new ValidationException('Search query cannot be empty');

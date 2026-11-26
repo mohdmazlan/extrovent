@@ -30,22 +30,23 @@ class PostService
     /**
      * Get all posts.
      */
-    public function getAll(array $filters = [], int $page = 1): array
+    public function getAll(string $userId, array $filters = [], int $page = 1): array
     {
         $LIMIT = 20;
         $offset = ($page - 1) * $LIMIT;
 
-        $sql = "SELECT 
-                    (SELECT COUNT(*) FROM outdoorbuddy_post_comment WHERE outdoorbuddy_posts.post_id = post_id) AS total_comment,
-                    (SELECT COUNT(*) FROM outdoorbuddy_post_like WHERE outdoorbuddy_posts.post_id = post_id) AS total_likes,
-                    p.post_id, p.banner, NOW() AS timeNow, p.date_cr8 AS date, 
+        $sql = "SELECT
+                    (SELECT COUNT(*) FROM outdoorbuddy_post_comment WHERE post_id = p.post_id) AS total_comment,
+                    (SELECT COUNT(*) FROM outdoorbuddy_post_like WHERE post_id = p.post_id) AS total_likes,
+                    p.post_id, p.banner, NOW() AS timeNow, p.date_cr8 AS date,
                     p.caption, p.type, pl.user_id AS sliked,
                     u.nickname, u.avatar, u.user_id
                 FROM outdoorbuddy_posts p
                 LEFT JOIN outdoorbuddy_post_like pl ON p.post_id = pl.post_id AND pl.user_id = ?
-                LEFT JOIN outdoorbuddy_users u ON u.user_id = p.user_id";
+                LEFT JOIN outdoorbuddy_users u ON u.user_id = p.user_id
+                WHERE 1=1";
 
-        $params = ['?' => $filters['current_user'] ?? ''];
+        $params = [$userId];
 
         // Place filter
         if (!empty($filters['place_id'])) {
@@ -71,7 +72,7 @@ class PostService
             $params[] = $filters['datetime'];
         }
 
-        $sql .= " GROUP BY p.post_id ORDER BY p.last_update DESC LIMIT ?, ?";
+        $sql .= " ORDER BY p.last_update DESC LIMIT ?, ?";
         $params[] = $offset;
         $params[] = $LIMIT;
 
@@ -112,6 +113,7 @@ class PostService
                 $this->db->insert('outdoorbuddy_post_like', [
                     'post_id' => $postId,
                     'user_id' => $userId,
+                    'datetime' => date('Y-m-d H:i:s'),
                 ]);
             } catch (\Exception $e) {
                 throw new \RuntimeException('Failed to like post');
@@ -136,6 +138,7 @@ class PostService
                 'post_id' => $postId,
                 'user_id' => $userId,
                 'comment' => $comment,
+                'datetime' => date('Y-m-d H:i:s'),
             ]);
         } catch (\Exception $e) {
             throw new \RuntimeException('Failed to add comment: ' . $e->getMessage());

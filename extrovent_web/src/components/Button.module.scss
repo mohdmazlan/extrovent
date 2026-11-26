@@ -1,0 +1,106 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-2;
+  font-family: $font-sans;
+  font-weight: $fw-semibold;
+  line-height: 1;
+  border: 1px solid transparent;
+  border-radius: $radius-full;
+  cursor: pointer;
+  transition:
+    background $duration-fast $ease-default,
+    color $duration-fast $ease-default,
+    border-color $duration-fast $ease-default,
+    box-shadow $duration-fast $ease-default,
+    transform $duration-fast $ease-out;
+  user-select: none;
+  white-space: nowrap;
+
+  &:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+    transform: none !important;
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+}
+
+// Variants
+.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  box-shadow: $shadow-sm;
+
+  &:hover:not(:disabled) {
+    background: var(--accent-hover);
+    box-shadow: $shadow-md;
+    transform: translateY(-1px);
+  }
+}
+
+.secondary {
+  background: var(--bg-elevated);
+  color: var(--text-h);
+  border-color: var(--border);
+
+  &:hover:not(:disabled) {
+    background: var(--bg-subtle);
+    border-color: var(--border-strong);
+    transform: translateY(-1px);
+  }
+}
+
+.ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: transparent;
+
+  &:hover:not(:disabled) {
+    background: var(--accent-soft);
+    color: var(--accent);
+  }
+}
+
+.danger {
+  background: var(--danger);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: #a93226;
+    transform: translateY(-1px);
+  }
+}
+
+// Sizes
+.sm {
+  font-size: $fs-sm;
+  padding: $space-2 $space-4;
+  height: 32px;
+}
+
+.md {
+  font-size: $fs-sm;
+  padding: $space-3 $space-5;
+  height: 40px;
+}
+
+.lg {
+  font-size: $fs-base;
+  padding: $space-4 $space-6;
+  height: 48px;
+}
+
+.full {
+  width: 100%;
+}

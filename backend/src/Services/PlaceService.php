@@ -14,6 +14,28 @@ class PlaceService
     public function __construct(private Database $db) {}
 
     /**
+     * Parse an opaque "lat,lng" coordinate string into [lat, lng].
+     * Returns null when absent; throws on malformed input.
+     *
+     * @return array{float,float}|null
+     */
+    private function parseCoordinate(mixed $raw): ?array
+    {
+        if ($raw === null || $raw === '') {
+            return null;
+        }
+        if (!is_string($raw) || !preg_match('/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/', $raw, $m)) {
+            throw new ValidationException('Invalid coordinate format, expected "lat,lng"');
+        }
+        $lat = (float) $m[1];
+        $lng = (float) $m[2];
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            throw new ValidationException('Coordinate out of range');
+        }
+        return [$lat, $lng];
+    }
+
+    /**
      * Create a new place.
      */
     public function create(string $userId, array $data): int
@@ -30,14 +52,27 @@ class PlaceService
             throw new ValidationException("Missing required fields: " . implode(', ', $missing));
         }
 
-        return $this->db->insert('outdoorbuddy_place', [
-            'name' => trim($data['name']),
-            'description' => trim($data['description'] ?? ''),
-            'category_location' => trim($data['category_location'] ?? 'others'),
-            'coordinate' => $data['coordinate'] ?? '',
-            'business_profile_id' => isset($data['business_profile_id']) ? (int) $data['business_profile_id'] : 0,
-            'user_id' => $userId,
-        ]);
+        $coords = $this->parseCoordinate($data['coordinate'] ?? null);
+        if ($coords === null) {
+            throw new ValidationException("Missing required fields: coordinate (click the map to set a location)");
+        }
+
+        $stmt = $this->db->query(
+            "INSERT INTO outdoorbuddy_place
+                (name, description, category_location, coordinate, create_date, last_update, verified, user_id, business_profile_id)
+             VALUES (?, ?, ?, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')), NOW(), NOW(), 1, ?, ?)",
+            [
+                trim($data['name']),
+                trim($data['description'] ?? ''),
+                trim($data['category_location'] ?? 'others'),
+                $coords[0],
+                $coords[1],
+                $userId,
+                isset($data['business_profile_id']) ? (int) $data['business_profile_id'] : 0,
+            ]
+        );
+
+        return (int) $this->db->pdo()->lastInsertId();
     }
 
     /**
@@ -45,7 +80,10 @@ class PlaceService
      */
     public function getAll(?string $category = null): array
     {
-        $sql = "SELECT p.*, bp.company_name 
+        $sql = "SELECT p.id, p.category_location, p.name, p.description,
+                       CONCAT(ST_X(p.coordinate), ',', ST_Y(p.coordinate)) AS coordinate,
+                       p.create_date, p.last_update, p.verified, p.user_id, p.business_profile_id,
+                       bp.company_name 
                 FROM outdoorbuddy_place p
                 LEFT JOIN outdoorbuddy_business_profile bp ON p.business_profile_id = bp.id";
 
@@ -67,7 +105,10 @@ class PlaceService
     public function getById(int $placeId): ?array
     {
         return $this->db->fetchOne(
-            "SELECT p.*, bp.company_name 
+            "SELECT p.id, p.category_location, p.name, p.description,
+                    CONCAT(ST_X(p.coordinate), ',', ST_Y(p.coordinate)) AS coordinate,
+                    p.create_date, p.last_update, p.verified, p.user_id, p.business_profile_id,
+                    bp.company_name
              FROM outdoorbuddy_place p
              LEFT JOIN outdoorbuddy_business_profile bp ON p.business_profile_id = bp.id
              WHERE p.id = ?",
@@ -97,6 +138,19 @@ class PlaceService
             if (isset($data[$field]) && $data[$field] !== '') {
                 $updateData[$field] = $data[$field];
             }
+        }
+
+        // POINT columns can't be bound as plain values: translate separately.
+        if (isset($updateData['coordinate'])) {
+            $coords = $this->parseCoordinate($updateData['coordinate']);
+            if ($coords === null) {
+                throw new ValidationException('Invalid coordinate format, expected "lat,lng"');
+            }
+            $this->db->query(
+                "UPDATE outdoorbuddy_place SET coordinate = ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')) WHERE id = ?",
+                [$coords[0], $coords[1], $placeId]
+            );
+            unset($updateData['coordinate']);
         }
 
         if (empty($updateData)) {
@@ -140,7 +194,10 @@ class PlaceService
     public function getMyPlaces(string $userId): array
     {
         return $this->db->fetchAll(
-            "SELECT * FROM outdoorbuddy_place WHERE user_id = ? ORDER BY create_date DESC",
+            "SELECT id, category_location, name, description,
+                    CONCAT(ST_X(coordinate), ',', ST_Y(coordinate)) AS coordinate,
+                    create_date, last_update, verified, user_id, business_profile_id
+             FROM outdoorbuddy_place WHERE user_id = ? ORDER BY create_date DESC",
             [$userId]
         );
     }

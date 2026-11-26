@@ -1,0 +1,108 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.wrapper {
+  min-height: calc(100vh - $header-height - 80px);
+  display: grid;
+  place-items: center;
+  padding: $space-8 $space-4;
+
+  @include respond(sm) {
+    padding: $space-6 $space-4;
+    min-height: calc(100vh - $header-height-mobile - 60px);
+  }
+}
+
+.card {
+  width: 100%;
+  max-width: 420px;
+  @include card(elevated);
+  overflow: hidden;
+  @include fade-in;
+}
+
+.header {
+  padding: $space-8 $space-6 $space-6;
+  text-align: center;
+  @include forest-gradient;
+  color: white;
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(400px 200px at 50% -20%, rgba(255,255,255,0.12), transparent 60%);
+    pointer-events: none;
+  }
+
+  h1 {
+    color: white;
+    margin: 0 0 $space-2;
+    font-size: $fs-2xl;
+    position: relative;
+    z-index: 1;
+  }
+
+  p {
+    color: rgba(255,255,255,0.85);
+    font-size: $fs-sm;
+    margin: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .logo {
+    width: 48px;
+    height: 48px;
+    border-radius: $radius-lg;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: grid;
+    place-items: center;
+    font-size: $fs-xl;
+    margin: 0 auto $space-4;
+    backdrop-filter: blur(8px);
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.form {
+  padding: $space-6;
+  display: grid;
+  gap: $space-4;
+
+  @include respond(sm) {
+    padding: $space-4;
+  }
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+  text-align: center;
+}
+
+.footer {
+  padding: $space-4 $space-6 $space-6;
+  text-align: center;
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-subtle);
+  font-size: $fs-sm;
+  color: var(--text-muted);
+
+  a {
+    color: var(--accent);
+    font-weight: $fw-medium;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}

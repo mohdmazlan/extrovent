@@ -81,7 +81,13 @@ class ResponseFormatter
             'error' => $this->error,
         ];
 
-        echo json_encode($payload, JSON_UNESCAPED_UNICODE);
+        // Substitute malformed UTF-8 instead of failing the whole response:
+        // legacy rows (e.g. place coordinates) may contain non-UTF8 bytes,
+        // and a bare json_encode failure would emit an empty 200 body.
+        echo json_encode(
+            $payload,
+            JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR
+        );
         exit;
     }
 

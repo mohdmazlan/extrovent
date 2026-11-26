@@ -1,0 +1,201 @@
+@use '../abstracts/variables' as *;
+@use '../abstracts/mixins' as *;
+
+// ── App Shell Layout ──
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: $z-header;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  height: $header-height;
+
+  @include respond(lg) {
+    height: $header-height-mobile;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background: rgba(17, 18, 16, 0.85);
+  }
+}
+
+.app-header__inner {
+  @include container;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-6;
+}
+
+.app-header__brand {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  text-decoration: none;
+  color: var(--text-h);
+  font-family: $font-heading;
+  font-weight: $fw-bold;
+  font-size: $fs-lg;
+  letter-spacing: -0.02em;
+
+  &:hover {
+    color: var(--accent);
+  }
+}
+
+.app-header__logo {
+  width: 36px;
+  height: 36px;
+  border-radius: $radius-md;
+  @include forest-gradient;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-size: $fs-lg;
+  box-shadow: $shadow-sm;
+}
+
+.app-header__nav {
+  display: flex;
+  align-items: center;
+  gap: $space-1;
+
+  @include respond(lg) {
+    position: fixed;
+    inset: $header-height-mobile 0 0 0;
+    background: var(--bg-elevated);
+    flex-direction: column;
+    align-items: stretch;
+    padding: $space-6 $space-4;
+    gap: $space-2;
+    border-top: 1px solid var(--border);
+    transform: translateX(100%);
+    transition: transform $duration-normal $ease-out;
+    overflow-y: auto;
+
+    &.is-open {
+      transform: translateX(0);
+    }
+  }
+}
+
+.app-header__link {
+  padding: $space-2 $space-4;
+  border-radius: $radius-full;
+  font-size: $fs-sm;
+  font-weight: $fw-medium;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition:
+    background $duration-fast $ease-default,
+    color $duration-fast $ease-default;
+
+  &:hover {
+    background: var(--bg-subtle);
+    color: var(--text-h);
+  }
+
+  &.is-active {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: $fw-semibold;
+  }
+
+  @include respond(lg) {
+    padding: $space-3 $space-4;
+    border-radius: $radius-md;
+    font-size: $fs-base;
+  }
+}
+
+.app-header__actions {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+
+  @include respond(lg) {
+    gap: $space-2;
+  }
+}
+
+.app-header__user {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-1 $space-1 $space-1 $space-3;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: $radius-full;
+  font-size: $fs-sm;
+
+  @include respond(lg) {
+    display: none;
+  }
+}
+
+.app-header__avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: $radius-full;
+  @include forest-gradient;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: $fw-bold;
+  font-size: $fs-sm;
+  flex-shrink: 0;
+}
+
+.app-header__burger {
+  display: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: var(--bg-subtle);
+  border-radius: $radius-md;
+  cursor: pointer;
+  place-items: center;
+  color: var(--text-h);
+  transition: background $duration-fast $ease-default;
+
+  &:hover {
+    background: var(--border);
+  }
+
+  @include respond(lg) {
+    display: grid;
+  }
+}
+
+.app-main {
+  flex: 1;
+  @include container;
+  padding: $space-8 0 $space-12;
+
+  @include respond(lg) {
+    padding: $space-6 0 $space-8;
+  }
+
+  @include respond(sm) {
+    padding: $space-4 0 $space-6;
+  }
+}
+
+.app-footer {
+  border-top: 1px solid var(--border-subtle);
+  padding: $space-6 0;
+  text-align: center;
+  font-size: $fs-sm;
+  color: var(--text-muted);
+}

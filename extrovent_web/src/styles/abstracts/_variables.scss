@@ -1,0 +1,114 @@
+// ── Outdoor Adventure Palette ──
+// Forest, stone, sky, sunset — premium & earthy
+
+// Brand
+$color-forest-900: #1b4332;
+$color-forest-700: #2d6a4f;
+$color-forest-500: #40916c;
+$color-forest-300: #52b788;
+$color-forest-100: #d8f3dc;
+
+$color-stone-900: #3d2c1e;
+$color-stone-700: #6b6b5f;
+$color-stone-500: #9c9a8a;
+$color-stone-300: #e8e6dd;
+$color-stone-100: #fdfbf7;
+$color-stone-50:  #fefae0;
+
+$color-amber-600: #e76f51;
+$color-amber-500: #f4a261;
+$color-amber-400: #e9c46a;
+$color-amber-100: #fef3c7;
+
+$color-sky-600: #264653;
+$color-sky-400: #2a9d8f;
+$color-sky-200: #a8dadc;
+
+$color-accent: $color-forest-700;
+$color-accent-hover: $color-forest-900;
+$color-accent-soft: rgba($color-forest-700, 0.08);
+$color-accent-ring: rgba($color-forest-500, 0.35);
+
+// Neutrals mapped to CSS vars (light/dark handled in themes)
+$color-bg: var(--bg);
+$color-bg-elevated: var(--bg-elevated);
+$color-text: var(--text);
+$color-text-heading: var(--text-h);
+$color-text-muted: var(--text-muted);
+$color-border: var(--border);
+$color-border-strong: var(--border-strong);
+
+// Spacing scale (4-based)
+$space-1: 4px;
+$space-2: 8px;
+$space-3: 12px;
+$space-4: 16px;
+$space-5: 20px;
+$space-6: 24px;
+$space-8: 32px;
+$space-10: 40px;
+$space-12: 48px;
+$space-16: 64px;
+$space-20: 80px;
+
+// Typography
+$font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+$font-heading: 'Outfit', 'Inter', system-ui, sans-serif;
+$font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
+
+$fs-xs: 12px;
+$fs-sm: 14px;
+$fs-base: 16px;
+$fs-md: 18px;
+$fs-lg: 20px;
+$fs-xl: 24px;
+$fs-2xl: 30px;
+$fs-3xl: 36px;
+$fs-4xl: 48px;
+$fs-hero: 56px;
+
+$fw-regular: 400;
+$fw-medium: 500;
+$fw-semibold: 600;
+$fw-bold: 700;
+
+$lh-tight: 1.1;
+$lh-snug: 1.25;
+$lh-normal: 1.5;
+$lh-relaxed: 1.7;
+
+// Radii
+$radius-sm: 8px;
+$radius-md: 12px;
+$radius-lg: 16px;
+$radius-xl: 24px;
+$radius-full: 9999px;
+
+// Shadows — soft, natural, outdoorsy depth
+$shadow-xs: 0 1px 2px rgba(16, 24, 16, 0.05);
+$shadow-sm: 0 2px 8px rgba(16, 24, 16, 0.06), 0 1px 3px rgba(16, 24, 16, 0.04);
+$shadow-md: 0 8px 24px rgba(16, 24, 16, 0.08), 0 4px 8px rgba(16, 24, 16, 0.05);
+$shadow-lg: 0 16px 40px rgba(16, 24, 16, 0.12), 0 8px 16px rgba(16, 24, 16, 0.06);
+$shadow-glow: 0 8px 32px rgba($color-forest-500, 0.18);
+
+// Motion
+$ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+$ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+$ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+$duration-fast: 150ms;
+$duration-normal: 200ms;
+$duration-slow: 300ms;
+$duration-slower: 500ms;
+
+// Layout
+$container-max: 1120px;
+$container-narrow: 640px;
+$header-height: 64px;
+$header-height-mobile: 56px;
+
+// Z-index
+$z-header: 50;
+$z-dropdown: 100;
+$z-modal: 200;
+$z-toast: 300;

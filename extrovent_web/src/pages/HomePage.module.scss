@@ -1,0 +1,242 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.hero {
+  position: relative;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  padding: $space-12 $space-8;
+  @include hero-gradient;
+  color: white;
+  @include fade-in;
+
+  @include respond(lg) {
+    padding: $space-8 $space-6;
+  }
+
+  @include respond(sm) {
+    padding: $space-6 $space-4;
+    border-radius: $radius-lg;
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(600px 300px at 20% 0%, rgba(255,255,255,0.08), transparent 60%),
+      radial-gradient(800px 400px at 90% 100%, rgba(244,162,97,0.15), transparent 60%);
+    pointer-events: none;
+  }
+}
+
+.heroInner {
+  position: relative;
+  z-index: 1;
+  max-width: 640px;
+}
+
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: $fs-xs;
+  font-weight: $fw-semibold;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.14);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  backdrop-filter: blur(8px);
+  margin-bottom: $space-4;
+}
+
+.heroTitle {
+  font-family: $font-heading;
+  font-size: $fs-hero;
+  font-weight: $fw-bold;
+  line-height: $lh-tight;
+  letter-spacing: -0.03em;
+  color: white;
+  margin: 0 0 $space-3;
+
+  @include respond(lg) {
+    font-size: $fs-3xl;
+  }
+
+  span {
+    background: linear-gradient(90deg, #fef3c7, #fde68a);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
+
+.heroSubtitle {
+  font-size: $fs-md;
+  line-height: $lh-relaxed;
+  color: rgba(255,255,255,0.85);
+  margin: 0 0 $space-6;
+  max-width: 520px;
+
+  @include respond(sm) {
+    font-size: $fs-base;
+  }
+}
+
+.heroActions {
+  display: flex;
+  gap: $space-3;
+  flex-wrap: wrap;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: $space-4;
+  margin-top: $space-8;
+
+  @include respond(sm) {
+    gap: $space-3;
+  }
+}
+
+.stat {
+  text-align: center;
+  padding: $space-4;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: $radius-lg;
+  backdrop-filter: blur(8px);
+}
+
+.statValue {
+  font-family: $font-heading;
+  font-size: $fs-xl;
+  font-weight: $fw-bold;
+  color: white;
+}
+
+.statLabel {
+  font-size: $fs-xs;
+  color: rgba(255,255,255,0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-top: 2px;
+}
+
+.section {
+  margin-top: $space-12;
+
+  @include respond(lg) {
+    margin-top: $space-8;
+  }
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: $space-6;
+
+  h2 {
+    margin: 0;
+    font-size: $fs-2xl;
+  }
+
+  a {
+    font-size: $fs-sm;
+    font-weight: $fw-medium;
+    color: var(--accent);
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: $space-4;
+
+  @include respond(sm) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.featureCard {
+  @include card(elevated);
+  padding: $space-6;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  position: relative;
+  overflow: hidden;
+  @include fade-in;
+
+  @for $i from 1 through 3 {
+    &:nth-child(#{$i}) {
+      animation-delay: #{$i * 70ms};
+    }
+  }
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity $duration-normal $ease-default;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+
+  &:hover {
+    text-decoration: none;
+  }
+}
+
+.featureIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: $radius-md;
+  display: grid;
+  place-items: center;
+  font-size: $fs-xl;
+  margin-bottom: $space-4;
+}
+
+.iconFeed {
+  background: rgba($color-forest-500, 0.12);
+  color: $color-forest-700;
+  border: 1px solid rgba($color-forest-500, 0.2);
+}
+
+.iconEvents {
+  background: rgba($color-amber-500, 0.15);
+  color: $color-amber-600;
+  border: 1px solid rgba($color-amber-600, 0.2);
+}
+
+.iconPlaces {
+  background: rgba($color-sky-400, 0.12);
+  color: $color-sky-600;
+  border: 1px solid rgba($color-sky-400, 0.2);
+}
+
+.featureTitle {
+  font-family: $font-heading;
+  font-weight: $fw-semibold;
+  font-size: $fs-lg;
+  color: var(--text-h);
+  margin-bottom: $space-2;
+}
+
+.featureDesc {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  line-height: $lh-normal;
+}

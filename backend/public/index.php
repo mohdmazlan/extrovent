@@ -28,6 +28,31 @@ $dotenv->load();
 define('APP_DEBUG', (($_ENV['APP_DEBUG'] ?? 'false') === 'true'));
 
 /**
+ * CORS: allow the web frontend cross-origin access.
+ * Set CORS_ALLOWED_ORIGINS=* to allow any origin (dev), or comma-separated list for prod.
+ * Preflight (OPTIONS) requests are answered here with 204 and exit.
+ */
+$corsOrigins = array_filter(array_map('trim', explode(',', $_ENV['CORS_ALLOWED_ORIGINS'] ?? '*')));
+$isWildcard = in_array('*', $corsOrigins, true);
+$requestOrigin = $_SERVER['HTTP_ORIGIN'] ?? '';
+if ($isWildcard) {
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Authorization, Content-Type');
+    header('Access-Control-Max-Age: 86400');
+} elseif ($requestOrigin !== '' && in_array($requestOrigin, $corsOrigins, true)) {
+    header('Access-Control-Allow-Origin: ' . $requestOrigin);
+    header('Vary: Origin');
+    header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+    header('Access-Control-Allow-Headers: Authorization, Content-Type');
+    header('Access-Control-Max-Age: 86400');
+}
+if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
+/**
  * Bootstrap: Create DI container with DB connection.
  */
 function bootstrapContainer(): Container
@@ -313,11 +338,18 @@ function buildMethodArgs(string $serviceClass, string $methodName, RequestParser
             $val = $request->get('category') ?? $request->get('place_id');
             if ($val !== null) $args[] = $val;
         }
-        // Default: try to get from request input by parameter name
+        // Default: try to get from request input by parameter name.
+        // Positional alignment matters: when the value is missing but the
+        // parameter has a default, pass the default explicitly instead of
+        // skipping — otherwise every later argument shifts left and lands
+        // in the wrong parameter (e.g. getAll($filters=[], $page=1) with
+        // only ?page=1 would put "1" into $filters).
         else {
             $val = $request->get($name);
             if ($val !== null) {
                 $args[] = $val;
+            } elseif ($param->isDefaultValueAvailable()) {
+                $args[] = $param->getDefaultValue();
             } elseif (!$param->isOptional()) {
                 // Required param not found - skip (will cause error when calling)
             }

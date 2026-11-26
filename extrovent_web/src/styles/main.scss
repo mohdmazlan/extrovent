@@ -1,0 +1,55 @@
+// Main SCSS entry — imports abstracts, themes, base
+@use 'abstracts/variables' as *;
+@use 'abstracts/mixins' as *;
+@use 'themes/tokens';
+@use 'base/reset';
+@use 'base/typography';
+
+// Global app shell tokens
+:root {
+  --sans: #{$font-sans};
+  --heading: #{$font-heading};
+  --mono: #{$font-mono};
+
+  font: 17px / 1.5 var(--sans);
+  letter-spacing: 0.01em;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+
+  @include respond(lg) {
+    font-size: 15px;
+  }
+}
+
+#root {
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+// Legacy Vite demo counter (kept for Home hero)
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: $radius-sm;
+  color: var(--text-h);
+  font-size: $fs-sm;
+  padding: $space-2 $space-3;
+  background: var(--accent-soft);
+  border: 2px solid transparent;
+  transition: border-color $duration-normal $ease-default;
+
+  &:hover {
+    border-color: var(--accent-ring);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
