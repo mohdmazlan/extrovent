@@ -63,7 +63,23 @@ if (!is_dir($migrationsDir)) {
     exit(1);
 }
 
+if (!preg_match('/^[A-Za-z0-9_]+$/', $dbname)) {
+    echo "✗ Invalid DB_NAME '{$dbname}' (letters, digits and underscore only)\n";
+    exit(1);
+}
+
 try {
+    // Connect to the server first so we can create the database if needed.
+    $pdoServer = new PDO(
+        "mysql:host={$host};port={$port};charset=utf8mb4",
+        $user,
+        $pass,
+        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+    );
+    $pdoServer->exec(
+        "CREATE DATABASE IF NOT EXISTS `{$dbname}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+    );
+
     $pdo = new PDO(
         "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4",
         $user,
@@ -75,7 +91,7 @@ try {
             PDO::ATTR_EMULATE_PREPARES => true,
         ]
     );
-    echo "✓ Connected\n\n";
+    echo "✓ Connected (database `{$dbname}` ready)\n\n";
 } catch (PDOException $e) {
     echo "✗ Connection failed: " . $e->getMessage() . "\n";
     exit(1);
