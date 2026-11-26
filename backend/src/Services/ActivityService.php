@@ -30,7 +30,7 @@ class ActivityService
             throw new ValidationException("Missing required fields: " . implode(', ', $missing));
         }
 
-        return $this->db->insert('outdoorbuddy_activity', [
+        return $this->db->insert('activity', [
             'category_Activity' => trim($data['category_Activity']),
             'name' => trim($data['name']),
             'description' => trim($data['description']),
@@ -45,8 +45,8 @@ class ActivityService
     public function getAll(): array
     {
         return $this->db->fetchAll(
-            "SELECT a.*, u.nickname FROM outdoorbuddy_activity a 
-             LEFT JOIN outdoorbuddy_users u ON a.user_id = u.user_id 
+            "SELECT a.*, u.nickname FROM activity a 
+             LEFT JOIN users u ON a.user_id = u.user_id 
              ORDER BY a.create_date DESC"
         );
     }
@@ -57,8 +57,8 @@ class ActivityService
     public function getById(int $activityId): ?array
     {
         return $this->db->fetchOne(
-            "SELECT a.*, u.nickname FROM outdoorbuddy_activity a 
-             LEFT JOIN outdoorbuddy_users u ON a.user_id = u.user_id 
+            "SELECT a.*, u.nickname FROM activity a 
+             LEFT JOIN users u ON a.user_id = u.user_id 
              WHERE a.id = ?",
             [$activityId]
         );
@@ -71,7 +71,7 @@ class ActivityService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_activity WHERE id = ?",
+            "SELECT user_id FROM activity WHERE id = ?",
             [$activityId]
         );
 
@@ -79,9 +79,9 @@ class ActivityService
             throw new BusinessLogicException('You do not own this activity');
         }
 
-        $this->db->delete('outdoorbuddy_activity_image', 'activity_id = ?', [$activityId]);
-        $this->db->delete('outdoorbuddy_activity_rating', 'activity_id = ?', [$activityId]);
-        $this->db->delete('outdoorbuddy_activity', 'id = ?', [$activityId]);
+        $this->db->delete('activity_image', 'activity_id = ?', [$activityId]);
+        $this->db->delete('activity_rating', 'activity_id = ?', [$activityId]);
+        $this->db->delete('activity', 'id = ?', [$activityId]);
 
         return ['success' => true];
     }
@@ -92,7 +92,7 @@ class ActivityService
     public function getImages(int $activityId): array
     {
         return array_map(fn($img) => $img['image_url'], $this->db->fetchAll(
-            "SELECT image_url FROM outdoorbuddy_activity_image WHERE activity_id = ?",
+            "SELECT image_url FROM activity_image WHERE activity_id = ?",
             [$activityId]
         ));
     }

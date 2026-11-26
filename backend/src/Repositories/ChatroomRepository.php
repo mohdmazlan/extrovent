@@ -62,7 +62,7 @@ class ChatroomRepository
              ) AS x
              INNER JOIN chat_message cm ON cm.room_id = x.room_id AND cm.datetime = x.lastDate
              INNER JOIN chatroom_members crm ON crm.room_id = x.room_id
-             INNER JOIN outdoorbuddy_users u ON crm.user_id = u.user_id AND crm.user_id != ?
+             INNER JOIN users u ON crm.user_id = u.user_id AND crm.user_id != ?
              WHERE crm.user_id IN (SELECT room_id FROM chatroom_members WHERE user_id = ?)
              GROUP BY x.room_id 
              ORDER BY x.lastDate DESC",
@@ -75,7 +75,7 @@ class ChatroomRepository
         return $this->db->fetchAll(
             "SELECT cm.user_id, u.nickname, u.avatar, cm.message, cm.datetime 
              FROM chat_message cm 
-             JOIN outdoorbuddy_users u ON cm.user_id = u.user_id 
+             JOIN users u ON cm.user_id = u.user_id 
              WHERE cm.room_id = ? 
              ORDER BY cm.datetime ASC",
             [$roomId]

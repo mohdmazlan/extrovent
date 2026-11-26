@@ -30,7 +30,7 @@ class AuthService
 
         // Check if user exists first
         $userRow = $this->db->fetchOne(
-            "SELECT password FROM outdoorbuddy_users WHERE user_id = ?",
+            "SELECT password FROM users WHERE user_id = ?",
             [$userId]
         );
 
@@ -49,12 +49,12 @@ class AuthService
         // Migrate to bcrypt if was md5
         if ($inputHash === $storedHash) {
             $newHash = password_hash($password, PASSWORD_DEFAULT);
-            $this->db->update('outdoorbuddy_users', ['password' => $newHash], 'user_id = ?', [$userId]);
+            $this->db->update('users', ['password' => $newHash], 'user_id = ?', [$userId]);
         }
 
         // Get user profile
         $profile = $this->db->fetchOne(
-            "SELECT user_id, nickname, email, avatar FROM outdoorbuddy_users WHERE user_id = ?",
+            "SELECT user_id, nickname, email, avatar FROM users WHERE user_id = ?",
             [$userId]
         );
 
@@ -108,7 +108,7 @@ class AuthService
         
         // Check if user has business profile (organizer role)
         $hasProfile = $this->db->fetchOne(
-            "SELECT id FROM outdoorbuddy_business_profile WHERE user_id = ?",
+            "SELECT id FROM business_profile WHERE user_id = ?",
             [$userId]
         );
         
@@ -131,7 +131,7 @@ class AuthService
         }
 
         $row = $this->db->fetchOne(
-            "SELECT id FROM outdoorbuddy_business_profile WHERE user_id = ?",
+            "SELECT id FROM business_profile WHERE user_id = ?",
             [$userId]
         );
 

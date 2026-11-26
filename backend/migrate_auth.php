@@ -194,7 +194,7 @@ function migratePasswords(PDO $pdo, bool $dryRun = false): int
     echo "\nChecking for md5 password hashes...\n";
     
     // Find users with md5 passwords (32 hex characters)
-    $stmt = $pdo->query("SELECT user_id, password FROM outdoorbuddy_users WHERE CHAR_LENGTH(password) = 32 AND password REGEXP '^[a-f0-9]+$'");
+    $stmt = $pdo->query("SELECT user_id, password FROM users WHERE CHAR_LENGTH(password) = 32 AND password REGEXP '^[a-f0-9]+$'");
     $md5Users = $stmt->fetchAll();
     
     if (empty($md5Users)) {
@@ -218,7 +218,7 @@ function migratePasswords(PDO $pdo, bool $dryRun = false): int
             // Generate bcrypt hash (will be checked against md5 during login)
             $newHash = password_hash($user['password'], PASSWORD_DEFAULT);
             
-            $updateStmt = $pdo->prepare("UPDATE outdoorbuddy_users SET password = ? WHERE user_id = ?");
+            $updateStmt = $pdo->prepare("UPDATE users SET password = ? WHERE user_id = ?");
             $updateStmt->execute([$newHash, $user['user_id']]);
             
             echo "  ✓ Migrated: {$user['user_id']}\n";

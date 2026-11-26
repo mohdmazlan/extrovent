@@ -14,7 +14,7 @@ class UserRepository
     public function findByUserId(string $userId): ?array
     {
         return $this->db->fetchOne(
-            "SELECT user_id, nickname, email, avatar, gender, signup, lastlogin FROM outdoorbuddy_users WHERE user_id = ?",
+            "SELECT user_id, nickname, email, avatar, gender, signup, lastlogin FROM users WHERE user_id = ?",
             [$userId]
         );
     }
@@ -22,7 +22,7 @@ class UserRepository
     public function findByEmail(string $email): ?array
     {
         return $this->db->fetchOne(
-            "SELECT * FROM outdoorbuddy_users WHERE email = ?",
+            "SELECT * FROM users WHERE email = ?",
             [strtolower($email)]
         );
     }
@@ -30,7 +30,7 @@ class UserRepository
     public function existsByUserId(string $userId): bool
     {
         $row = $this->db->fetchOne(
-            "SELECT user_id FROM outdoorbuddy_users WHERE user_id = ?",
+            "SELECT user_id FROM users WHERE user_id = ?",
             [$userId]
         );
         return (bool) $row;
@@ -38,7 +38,7 @@ class UserRepository
 
     public function create(array $data): int
     {
-        return $this->db->insert('outdoorbuddy_users', [
+        return $this->db->insert('users', [
             'user_id' => $data['user_id'],
             'nickname' => $data['nickname'] ?? '',
             'email' => strtolower($data['email']),
@@ -50,24 +50,24 @@ class UserRepository
 
     public function createDetails(string $userId): void
     {
-        $this->db->insert('outdoorbuddy_user_details', ['user_id' => $userId]);
+        $this->db->insert('user_details', ['user_id' => $userId]);
     }
 
     public function updateProfile(string $userId, array $data): int
     {
-        return $this->db->update('outdoorbuddy_users', $data, 'user_id = ?', [$userId]);
+        return $this->db->update('users', $data, 'user_id = ?', [$userId]);
     }
 
     public function updateAvatar(string $userId, string $avatarUrl): int
     {
-        return $this->db->update('outdoorbuddy_users', ['avatar' => $avatarUrl], 'user_id = ?', [$userId]);
+        return $this->db->update('users', ['avatar' => $avatarUrl], 'user_id = ?', [$userId]);
     }
 
     public function searchUsers(string $query, int $limit = 20): array
     {
         $search = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
         return $this->db->fetchAll(
-            "SELECT user_id, nickname, avatar FROM outdoorbuddy_users 
+            "SELECT user_id, nickname, avatar FROM users 
              WHERE nickname LIKE ? OR email LIKE ? LIMIT ?",
             [$search, $search, $limit]
         );
@@ -76,7 +76,7 @@ class UserRepository
     public function getAllUsers(): array
     {
         return $this->db->fetchAll(
-            "SELECT user_id, nickname, avatar FROM outdoorbuddy_users ORDER BY signup DESC"
+            "SELECT user_id, nickname, avatar FROM users ORDER BY signup DESC"
         );
     }
 
@@ -84,8 +84,8 @@ class UserRepository
     {
         return $this->db->fetchOne(
             "SELECT u.nickname, u.avatar, u.email, ud.* 
-             FROM outdoorbuddy_users u
-             LEFT JOIN outdoorbuddy_user_details ud ON u.user_id = ud.user_id
+             FROM users u
+             LEFT JOIN user_details ud ON u.user_id = ud.user_id
              WHERE u.user_id = ?",
             [$userId]
         );
@@ -95,8 +95,8 @@ class UserRepository
     {
         return $this->db->fetchAll(
             "SELECT u.user_id, u.nickname, u.avatar 
-             FROM outdoorbuddy_friends f
-             JOIN outdoorbuddy_users u ON (f.user_id1 = ? AND f.user_id2 = u.user_id) OR (f.user_id2 = ? AND f.user_id1 = u.user_id)
+             FROM friends f
+             JOIN users u ON (f.user_id1 = ? AND f.user_id2 = u.user_id) OR (f.user_id2 = ? AND f.user_id1 = u.user_id)
              WHERE f.approved = 1",
             [$userId, $userId]
         );
@@ -104,6 +104,6 @@ class UserRepository
 
     public function updatePassword(string $userId, string $hashedPassword): int
     {
-        return $this->db->update('outdoorbuddy_users', ['password' => $hashedPassword], 'user_id = ?', [$userId]);
+        return $this->db->update('users', ['password' => $hashedPassword], 'user_id = ?', [$userId]);
     }
 }

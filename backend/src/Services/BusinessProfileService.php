@@ -30,7 +30,7 @@ class BusinessProfileService
             throw new ValidationException("Missing required fields: " . implode(', ', $missing));
         }
 
-        return $this->db->insert('outdoorbuddy_business_profile', [
+        return $this->db->insert('business_profile', [
             'avatar' => $data['avatar'] ?? '',
             'company_name' => trim($data['company_name']),
             'reg_no' => trim($data['reg_no']),
@@ -45,7 +45,7 @@ class BusinessProfileService
     public function getAll(): array
     {
         return $this->db->fetchAll(
-            "SELECT * FROM outdoorbuddy_business_profile WHERE approved = 1 ORDER BY create_date DESC"
+            "SELECT * FROM business_profile WHERE approved = 1 ORDER BY create_date DESC"
         );
     }
 
@@ -55,7 +55,7 @@ class BusinessProfileService
     public function getById(int $profileId): ?array
     {
         return $this->db->fetchOne(
-            "SELECT * FROM outdoorbuddy_business_profile WHERE id = ?",
+            "SELECT * FROM business_profile WHERE id = ?",
             [$profileId]
         );
     }
@@ -67,7 +67,7 @@ class BusinessProfileService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_business_profile WHERE id = ?",
+            "SELECT user_id FROM business_profile WHERE id = ?",
             [$profileId]
         );
 
@@ -88,7 +88,7 @@ class BusinessProfileService
             throw new ValidationException('No valid fields to update');
         }
 
-        $affected = $this->db->update('outdoorbuddy_business_profile', $updateData, 'id = ?', [$profileId]);
+        $affected = $this->db->update('business_profile', $updateData, 'id = ?', [$profileId]);
 
         if (!$affected) {
             throw new \RuntimeException('Update failed');
@@ -103,7 +103,7 @@ class BusinessProfileService
     public function getMyProfiles(string $userId): array
     {
         return $this->db->fetchAll(
-            "SELECT * FROM outdoorbuddy_business_profile WHERE user_id = ? ORDER BY create_date DESC",
+            "SELECT * FROM business_profile WHERE user_id = ? ORDER BY create_date DESC",
             [$userId]
         );
     }
@@ -115,7 +115,7 @@ class BusinessProfileService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_business_profile WHERE id = ?",
+            "SELECT user_id FROM business_profile WHERE id = ?",
             [$profileId]
         );
 
@@ -124,7 +124,7 @@ class BusinessProfileService
         }
 
         $bannerUrl = $data['banner'] ?? '';
-        $this->db->update('outdoorbuddy_business_profile', ['banner' => $bannerUrl], 'id = ?', [$profileId]);
+        $this->db->update('business_profile', ['banner' => $bannerUrl], 'id = ?', [$profileId]);
 
         return ['success' => true, 'banner' => $bannerUrl];
     }
@@ -136,7 +136,7 @@ class BusinessProfileService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_business_profile WHERE id = ?",
+            "SELECT user_id FROM business_profile WHERE id = ?",
             [$profileId]
         );
 
@@ -145,7 +145,7 @@ class BusinessProfileService
         }
 
         $avatarUrl = $data['avatar'] ?? '';
-        $this->db->update('outdoorbuddy_business_profile', ['avatar' => $avatarUrl], 'id = ?', [$profileId]);
+        $this->db->update('business_profile', ['avatar' => $avatarUrl], 'id = ?', [$profileId]);
 
         return ['success' => true, 'avatar' => $avatarUrl];
     }

@@ -7,6 +7,6 @@ namespace Extrovent\Models;
  */
 class User extends BaseModel
 {
-    protected static string $tableName = 'outdoorbuddy_users';
+    protected static string $tableName = 'users';
     protected static string $primaryKey = 'user_id';
 }

@@ -46,7 +46,7 @@ class UserService
 
         // Check if user_id already exists
         if ($this->db->fetchOne(
-            "SELECT user_id FROM outdoorbuddy_users WHERE user_id = ?",
+            "SELECT user_id FROM users WHERE user_id = ?",
             [$userId]
         )) {
             throw new ValidationException('User ID already exists');
@@ -57,7 +57,7 @@ class UserService
 
         try {
             // Insert user details table first (empty record)
-            $this->db->insert('outdoorbuddy_user_details', ['user_id' => $userId]);
+            $this->db->insert('user_details', ['user_id' => $userId]);
 
             // Insert user
             $gender = trim($data['gender'] ?? '');
@@ -66,7 +66,7 @@ class UserService
             }
             
             $now = date('Y-m-d H:i:s');
-            $this->db->insert('outdoorbuddy_users', [
+            $this->db->insert('users', [
                 'user_id' => $userId,
                 'nickname' => trim($data['nickname'] ?? ''),
                 'email' => $email,
@@ -116,8 +116,8 @@ class UserService
     {
         return $this->db->fetchOne(
             "SELECT u.nickname, u.avatar, u.email, ud.* 
-             FROM outdoorbuddy_users u
-             LEFT JOIN outdoorbuddy_user_details ud ON u.user_id = ud.user_id
+             FROM users u
+             LEFT JOIN user_details ud ON u.user_id = ud.user_id
              WHERE u.user_id = ?",
             [$userId]
         );
@@ -141,7 +141,7 @@ class UserService
             throw new ValidationException('No valid fields to update');
         }
 
-        $affected = $this->db->update('outdoorbuddy_users', $updateData, 'user_id = ?', [$userId]);
+        $affected = $this->db->update('users', $updateData, 'user_id = ?', [$userId]);
 
         if (!$affected) {
             throw new \RuntimeException('Update failed');
@@ -160,7 +160,7 @@ class UserService
             throw new ValidationException('Avatar URL is required');
         }
 
-        $this->db->update('outdoorbuddy_users', ['avatar' => $avatarUrl], 'user_id = ?', [$userId]);
+        $this->db->update('users', ['avatar' => $avatarUrl], 'user_id = ?', [$userId]);
         return ['success' => true, 'avatar' => $avatarUrl];
     }
 
@@ -171,7 +171,7 @@ class UserService
     {
         $search = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
         return $this->db->fetchAll(
-            "SELECT user_id, nickname, avatar FROM outdoorbuddy_users 
+            "SELECT user_id, nickname, avatar FROM users 
              WHERE nickname LIKE ? OR email LIKE ? LIMIT ?",
             [$search, $search, $limit]
         );
@@ -183,7 +183,7 @@ class UserService
     public function getAllUsers(): array
     {
         return $this->db->fetchAll(
-            "SELECT user_id, nickname, avatar FROM outdoorbuddy_users ORDER BY signup DESC"
+            "SELECT user_id, nickname, avatar FROM users ORDER BY signup DESC"
         );
     }
 
@@ -194,8 +194,8 @@ class UserService
     {
         return $this->db->fetchAll(
             "SELECT u.user_id, u.nickname, u.avatar 
-             FROM outdoorbuddy_friends f
-             JOIN outdoorbuddy_users u ON (f.user_id1 = ? AND f.user_id2 = u.user_id) OR (f.user_id2 = ? AND f.user_id1 = u.user_id)
+             FROM friends f
+             JOIN users u ON (f.user_id1 = ? AND f.user_id2 = u.user_id) OR (f.user_id2 = ? AND f.user_id1 = u.user_id)
              WHERE f.approved = 1",
             [$userId, $userId]
         );

@@ -30,7 +30,7 @@ class EventService
             throw new ValidationException("Missing required fields: " . implode(', ', $missing));
         }
 
-        return $this->db->insert('outdoorbuddy_events', [
+        return $this->db->insert('events', [
             'category' => trim($data['category']),
             'title' => trim($data['title']),
             'place_id' => (int) $data['place_id'],
@@ -51,8 +51,8 @@ class EventService
     public function getAll(?string $placeId = null): array
     {
         $sql = "SELECT e.*, u.nickname 
-                FROM outdoorbuddy_events e
-                LEFT JOIN outdoorbuddy_users u ON e.user_id = u.user_id";
+                FROM events e
+                LEFT JOIN users u ON e.user_id = u.user_id";
 
         $params = [];
 
@@ -73,8 +73,8 @@ class EventService
     {
         return $this->db->fetchOne(
             "SELECT e.*, u.nickname 
-             FROM outdoorbuddy_events e
-             LEFT JOIN outdoorbuddy_users u ON e.user_id = u.user_id
+             FROM events e
+             LEFT JOIN users u ON e.user_id = u.user_id
              WHERE e.event_id = ?",
             [$eventId]
         );
@@ -87,7 +87,7 @@ class EventService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_events WHERE event_id = ?",
+            "SELECT user_id FROM events WHERE event_id = ?",
             [$eventId]
         );
 
@@ -108,7 +108,7 @@ class EventService
             throw new ValidationException('No valid fields to update');
         }
 
-        $affected = $this->db->update('outdoorbuddy_events', $updateData, 'event_id = ?', [$eventId]);
+        $affected = $this->db->update('events', $updateData, 'event_id = ?', [$eventId]);
 
         if (!$affected) {
             throw new \RuntimeException('Update failed');
@@ -124,7 +124,7 @@ class EventService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_events WHERE event_id = ?",
+            "SELECT user_id FROM events WHERE event_id = ?",
             [$eventId]
         );
 
@@ -133,11 +133,11 @@ class EventService
         }
 
         // Delete related data
-        $this->db->delete('outdoorbuddy_event_image', 'event_id = ?', [$eventId]);
-        $this->db->delete('outdoorbuddy_event_rating', 'event_id = ?', [$eventId]);
-        $this->db->delete('outdoorbuddy_event_like', 'event_id = ?', [$eventId]);
-        $this->db->delete('outdoorbuddy_event_comment', 'event_id = ?', [$eventId]);
-        $this->db->delete('outdoorbuddy_events', 'event_id = ?', [$eventId]);
+        $this->db->delete('event_image', 'event_id = ?', [$eventId]);
+        $this->db->delete('event_rating', 'event_id = ?', [$eventId]);
+        $this->db->delete('event_like', 'event_id = ?', [$eventId]);
+        $this->db->delete('event_comment', 'event_id = ?', [$eventId]);
+        $this->db->delete('events', 'event_id = ?', [$eventId]);
 
         return ['success' => true];
     }
@@ -148,7 +148,7 @@ class EventService
     public function getMyEvents(string $userId): array
     {
         return $this->db->fetchAll(
-            "SELECT * FROM outdoorbuddy_events WHERE user_id = ? ORDER BY create_date DESC",
+            "SELECT * FROM events WHERE user_id = ? ORDER BY create_date DESC",
             [$userId]
         );
     }
@@ -160,7 +160,7 @@ class EventService
     {
         // Check if already joined
         $count = $this->db->fetchColumn(
-            "SELECT COUNT(*) FROM outdoorbuddy_participants 
+            "SELECT COUNT(*) FROM participants 
              WHERE event_id = ? AND user_id = ?",
             [$eventId, $userId]
         );
@@ -169,7 +169,7 @@ class EventService
             throw new BusinessLogicException('Already joined this event');
         }
 
-        $this->db->insert('outdoorbuddy_participants', [
+        $this->db->insert('participants', [
             'event_id' => $eventId,
             'user_id' => $userId,
             'datetime' => date('Y-m-d H:i:s'),
@@ -184,7 +184,7 @@ class EventService
     public function getTotalParticipants(int $eventId): int
     {
         $count = $this->db->fetchColumn(
-            "SELECT COUNT(*) FROM outdoorbuddy_participants WHERE event_id = ?",
+            "SELECT COUNT(*) FROM participants WHERE event_id = ?",
             [$eventId]
         );
         return (int) ($count ?: 0);
@@ -197,17 +197,17 @@ class EventService
     {
         // Check if already liked
         $existing = $this->db->fetchOne(
-            "SELECT id FROM outdoorbuddy_event_like WHERE event_id = ? AND user_id = ?",
+            "SELECT id FROM event_like WHERE event_id = ? AND user_id = ?",
             [$eventId, $userId]
         );
 
         if ($existing) {
             // Unlike (delete)
-            $this->db->delete('outdoorbuddy_event_like', 'id = ?', [$existing['id']]);
+            $this->db->delete('event_like', 'id = ?', [$existing['id']]);
         } else {
             // Like
             try {
-                $this->db->insert('outdoorbuddy_event_like', [
+                $this->db->insert('event_like', [
                     'user_id' => $userId,
                     'event_id' => (string) $eventId,
                     'datetime' => date('Y-m-d H:i:s'),
@@ -226,7 +226,7 @@ class EventService
     public function getLikedEvents(string $userId): array
     {
         return array_map(fn($row) => (int) $row['event_id'], $this->db->fetchAll(
-            "SELECT event_id FROM outdoorbuddy_event_like WHERE user_id = ?",
+            "SELECT event_id FROM event_like WHERE user_id = ?",
             [$userId]
         ));
     }
@@ -237,7 +237,7 @@ class EventService
     public function getImages(int $eventId): array
     {
         return array_map(fn($img) => $img['image_url'], $this->db->fetchAll(
-            "SELECT image_url FROM outdoorbuddy_event_image WHERE event_id = ?",
+            "SELECT image_url FROM event_image WHERE event_id = ?",
             [$eventId]
         ));
     }

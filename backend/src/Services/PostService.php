@@ -17,7 +17,7 @@ class PostService
      */
     public function create(string $userId, array $data): int
     {
-        return $this->db->insert('outdoorbuddy_posts', [
+        return $this->db->insert('posts', [
             'caption' => trim($data['caption'] ?? ''),
             'banner' => '',
             'user_id' => $userId,
@@ -36,14 +36,14 @@ class PostService
         $offset = ($page - 1) * $LIMIT;
 
         $sql = "SELECT
-                    (SELECT COUNT(*) FROM outdoorbuddy_post_comment WHERE post_id = p.post_id) AS total_comment,
-                    (SELECT COUNT(*) FROM outdoorbuddy_post_like WHERE post_id = p.post_id) AS total_likes,
+                    (SELECT COUNT(*) FROM post_comment WHERE post_id = p.post_id) AS total_comment,
+                    (SELECT COUNT(*) FROM post_like WHERE post_id = p.post_id) AS total_likes,
                     p.post_id, p.banner, NOW() AS timeNow, p.date_cr8 AS date,
                     p.caption, p.type, pl.user_id AS sliked,
                     u.nickname, u.avatar, u.user_id
-                FROM outdoorbuddy_posts p
-                LEFT JOIN outdoorbuddy_post_like pl ON p.post_id = pl.post_id AND pl.user_id = ?
-                LEFT JOIN outdoorbuddy_users u ON u.user_id = p.user_id
+                FROM posts p
+                LEFT JOIN post_like pl ON p.post_id = pl.post_id AND pl.user_id = ?
+                LEFT JOIN users u ON u.user_id = p.user_id
                 WHERE 1=1";
 
         $params = [$userId];
@@ -85,9 +85,9 @@ class PostService
     public function getMyPosts(string $userId): array
     {
         return $this->db->fetchAll(
-            "SELECT p.*, (SELECT COUNT(*) FROM outdoorbuddy_post_comment WHERE post_id = p.post_id) AS total_comment,
-                     (SELECT COUNT(*) FROM outdoorbuddy_post_like WHERE post_id = p.post_id) AS total_likes
-              FROM outdoorbuddy_posts p 
+            "SELECT p.*, (SELECT COUNT(*) FROM post_comment WHERE post_id = p.post_id) AS total_comment,
+                     (SELECT COUNT(*) FROM post_like WHERE post_id = p.post_id) AS total_likes
+              FROM posts p 
               WHERE p.user_id = ? 
               ORDER BY p.last_update DESC",
             [$userId]
@@ -100,17 +100,17 @@ class PostService
     public function likePost(int $postId, string $userId): array
     {
         $existing = $this->db->fetchOne(
-            "SELECT id FROM outdoorbuddy_post_like WHERE post_id = ? AND user_id = ?",
+            "SELECT id FROM post_like WHERE post_id = ? AND user_id = ?",
             [$postId, $userId]
         );
 
         if ($existing) {
             // Unlike (delete)
-            $this->db->delete('outdoorbuddy_post_like', 'id = ?', [$existing['id']]);
+            $this->db->delete('post_like', 'id = ?', [$existing['id']]);
         } else {
             // Like
             try {
-                $this->db->insert('outdoorbuddy_post_like', [
+                $this->db->insert('post_like', [
                     'post_id' => $postId,
                     'user_id' => $userId,
                     'datetime' => date('Y-m-d H:i:s'),
@@ -134,7 +134,7 @@ class PostService
         }
 
         try {
-            $this->db->insert('outdoorbuddy_post_comment', [
+            $this->db->insert('post_comment', [
                 'post_id' => $postId,
                 'user_id' => $userId,
                 'comment' => $comment,
@@ -154,8 +154,8 @@ class PostService
     {
         return $this->db->fetchAll(
             "SELECT c.*, u.nickname, u.avatar 
-             FROM outdoorbuddy_post_comment c 
-             JOIN outdoorbuddy_users u ON c.user_id = u.user_id 
+             FROM post_comment c 
+             JOIN users u ON c.user_id = u.user_id 
              WHERE c.post_id = ? 
              ORDER BY c.datetime ASC",
             [$postId]
@@ -169,7 +169,7 @@ class PostService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_posts WHERE post_id = ?",
+            "SELECT user_id FROM posts WHERE post_id = ?",
             [$postId]
         );
 
@@ -177,10 +177,10 @@ class PostService
             throw new BusinessLogicException('You do not own this post');
         }
 
-        $this->db->delete('outdoorbuddy_post_image', 'post_id = ?', [$postId]);
-        $this->db->delete('outdoorbuddy_post_like', 'post_id = ?', [$postId]);
-        $this->db->delete('outdoorbuddy_post_comment', 'post_id = ?', [$postId]);
-        $this->db->delete('outdoorbuddy_posts', 'post_id = ?', [$postId]);
+        $this->db->delete('post_image', 'post_id = ?', [$postId]);
+        $this->db->delete('post_like', 'post_id = ?', [$postId]);
+        $this->db->delete('post_comment', 'post_id = ?', [$postId]);
+        $this->db->delete('posts', 'post_id = ?', [$postId]);
 
         return ['success' => true];
     }
@@ -191,7 +191,7 @@ class PostService
     public function getImages(int $postId): array
     {
         return array_map(fn($img) => $img['image_url'], $this->db->fetchAll(
-            "SELECT image_url FROM outdoorbuddy_post_image WHERE post_id = ?",
+            "SELECT image_url FROM post_image WHERE post_id = ?",
             [$postId]
         ));
     }
@@ -202,7 +202,7 @@ class PostService
     public function getBanner(int $postId): ?string
     {
         $post = $this->db->fetchOne(
-            "SELECT banner FROM outdoorbuddy_posts WHERE post_id = ?",
+            "SELECT banner FROM posts WHERE post_id = ?",
             [$postId]
         );
 

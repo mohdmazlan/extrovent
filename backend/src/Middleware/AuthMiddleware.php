@@ -87,7 +87,7 @@ class AuthMiddleware
     {
         // Check if user exists — confirms the token owner is still a valid logged-in user
         $userExists = $this->db->fetchOne(
-            "SELECT user_id FROM outdoorbuddy_users WHERE user_id = ?",
+            "SELECT user_id FROM users WHERE user_id = ?",
             [$userId]
         );
 

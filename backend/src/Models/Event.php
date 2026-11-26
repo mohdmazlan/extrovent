@@ -7,6 +7,6 @@ namespace Extrovent\Models;
  */
 class Event extends BaseModel
 {
-    protected static string $tableName = 'outdoorbuddy_events';
+    protected static string $tableName = 'events';
     protected static string $primaryKey = 'event_id';
 }

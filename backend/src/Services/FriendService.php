@@ -30,7 +30,7 @@ class FriendService
 
         // Check if already friends or request exists
         $existing = $this->db->fetchOne(
-            "SELECT id FROM outdoorbuddy_friends 
+            "SELECT id FROM friends 
              WHERE (user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?)
              AND approved != 1",
             [$userId, $toUserId, $toUserId, $userId]
@@ -41,7 +41,7 @@ class FriendService
         }
 
         try {
-            $this->db->insert('outdoorbuddy_friends', [
+            $this->db->insert('friends', [
                 'user_id1' => $userId,
                 'user_id2' => $toUserId,
                 'approved' => 0,
@@ -66,7 +66,7 @@ class FriendService
 
         try {
             $this->db->update(
-                'outdoorbuddy_friends',
+                'friends',
                 ['approved' => 1],
                 '(user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?)',
                 [$userId, $otherUserId, $otherUserId, $userId]
@@ -85,8 +85,8 @@ class FriendService
     {
         return $this->db->fetchAll(
             "SELECT f.*, u.nickname, u.avatar 
-             FROM outdoorbuddy_friends f
-             JOIN outdoorbuddy_users u ON f.user_id1 = ? AND f.user_id2 = u.user_id
+             FROM friends f
+             JOIN users u ON f.user_id1 = ? AND f.user_id2 = u.user_id
              WHERE f.user_id2 = ? AND f.approved = 0",
             [$userId, $userId]
         );
@@ -99,8 +99,8 @@ class FriendService
     {
         return $this->db->fetchAll(
             "SELECT f.*, u.nickname, u.avatar 
-             FROM outdoorbuddy_friends f
-             JOIN outdoorbuddy_users u ON f.user_id2 = ? AND u.user_id = f.user_id1
+             FROM friends f
+             JOIN users u ON f.user_id2 = ? AND u.user_id = f.user_id1
              WHERE f.user_id1 = ? AND f.approved = 0",
             [$userId, $userId]
         );
@@ -113,8 +113,8 @@ class FriendService
     {
         return $this->db->fetchAll(
             "SELECT u.user_id, u.nickname, u.avatar 
-             FROM outdoorbuddy_friends f
-             JOIN outdoorbuddy_users u ON (f.user_id1 = ? AND f.user_id2 = u.user_id) OR (f.user_id2 = ? AND f.user_id1 = u.user_id)
+             FROM friends f
+             JOIN users u ON (f.user_id1 = ? AND f.user_id2 = u.user_id) OR (f.user_id2 = ? AND f.user_id1 = u.user_id)
              WHERE f.approved = 1",
             [$userId, $userId]
         );
@@ -132,7 +132,7 @@ class FriendService
         }
 
         $row = $this->db->fetchOne(
-            "SELECT approved FROM outdoorbuddy_friends 
+            "SELECT approved FROM friends 
              WHERE ((user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?))
              AND approved = 1",
             [$userId, $otherUserId, $otherUserId, $userId]
@@ -154,7 +154,7 @@ class FriendService
 
         try {
             $this->db->delete(
-                'outdoorbuddy_friends',
+                'friends',
                 '((user_id1 = ? AND user_id2 = ?) OR (user_id1 = ? AND user_id2 = ?)) AND approved = 1',
                 [$userId, $otherUserId, $otherUserId, $userId]
             );

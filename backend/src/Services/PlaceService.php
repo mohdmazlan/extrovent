@@ -58,7 +58,7 @@ class PlaceService
         }
 
         $stmt = $this->db->query(
-            "INSERT INTO outdoorbuddy_place
+            "INSERT INTO place
                 (name, description, category_location, coordinate, create_date, last_update, verified, user_id, business_profile_id)
              VALUES (?, ?, ?, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')), NOW(), NOW(), 1, ?, ?)",
             [
@@ -84,8 +84,8 @@ class PlaceService
                        CONCAT(ST_X(p.coordinate), ',', ST_Y(p.coordinate)) AS coordinate,
                        p.create_date, p.last_update, p.verified, p.user_id, p.business_profile_id,
                        bp.company_name 
-                FROM outdoorbuddy_place p
-                LEFT JOIN outdoorbuddy_business_profile bp ON p.business_profile_id = bp.id";
+                FROM place p
+                LEFT JOIN business_profile bp ON p.business_profile_id = bp.id";
 
         $params = [];
 
@@ -109,8 +109,8 @@ class PlaceService
                     CONCAT(ST_X(p.coordinate), ',', ST_Y(p.coordinate)) AS coordinate,
                     p.create_date, p.last_update, p.verified, p.user_id, p.business_profile_id,
                     bp.company_name
-             FROM outdoorbuddy_place p
-             LEFT JOIN outdoorbuddy_business_profile bp ON p.business_profile_id = bp.id
+             FROM place p
+             LEFT JOIN business_profile bp ON p.business_profile_id = bp.id
              WHERE p.id = ?",
             [$placeId]
         );
@@ -123,7 +123,7 @@ class PlaceService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_place WHERE id = ?",
+            "SELECT user_id FROM place WHERE id = ?",
             [$placeId]
         );
 
@@ -147,7 +147,7 @@ class PlaceService
                 throw new ValidationException('Invalid coordinate format, expected "lat,lng"');
             }
             $this->db->query(
-                "UPDATE outdoorbuddy_place SET coordinate = ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')) WHERE id = ?",
+                "UPDATE place SET coordinate = ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')) WHERE id = ?",
                 [$coords[0], $coords[1], $placeId]
             );
             unset($updateData['coordinate']);
@@ -157,7 +157,7 @@ class PlaceService
             throw new ValidationException('No valid fields to update');
         }
 
-        $affected = $this->db->update('outdoorbuddy_place', $updateData, 'id = ?', [$placeId]);
+        $affected = $this->db->update('place', $updateData, 'id = ?', [$placeId]);
 
         if (!$affected) {
             throw new \RuntimeException('Update failed');
@@ -173,7 +173,7 @@ class PlaceService
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
-            "SELECT user_id FROM outdoorbuddy_place WHERE id = ?",
+            "SELECT user_id FROM place WHERE id = ?",
             [$placeId]
         );
 
@@ -181,9 +181,9 @@ class PlaceService
             throw new BusinessLogicException('You do not own this place');
         }
 
-        $this->db->delete('outdoorbuddy_place_image', 'place_id = ?', [$placeId]);
-        $this->db->delete('outdoorbuddy_place_rating', 'place_id = ?', [$placeId]);
-        $this->db->delete('outdoorbuddy_place', 'id = ?', [$placeId]);
+        $this->db->delete('place_image', 'place_id = ?', [$placeId]);
+        $this->db->delete('place_rating', 'place_id = ?', [$placeId]);
+        $this->db->delete('place', 'id = ?', [$placeId]);
 
         return ['success' => true];
     }
@@ -197,7 +197,7 @@ class PlaceService
             "SELECT id, category_location, name, description,
                     CONCAT(ST_X(coordinate), ',', ST_Y(coordinate)) AS coordinate,
                     create_date, last_update, verified, user_id, business_profile_id
-             FROM outdoorbuddy_place WHERE user_id = ? ORDER BY create_date DESC",
+             FROM place WHERE user_id = ? ORDER BY create_date DESC",
             [$userId]
         );
     }
@@ -208,7 +208,7 @@ class PlaceService
     public function getImages(int $placeId): array
     {
         return array_map(fn($img) => $img['image_url'], $this->db->fetchAll(
-            "SELECT image_url FROM outdoorbuddy_place_image WHERE place_id = ?",
+            "SELECT image_url FROM place_image WHERE place_id = ?",
             [$placeId]
         ));
     }

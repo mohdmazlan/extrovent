@@ -62,12 +62,12 @@ backend/
 
 ## Database Setup
 
-1. Create the database using the existing `outdoorbuddy.sql` schema
+1. Create the database using the existing `extrovent.sql` schema
 2. Update `.env` with your MySQL credentials:
    ```env
    DB_HOST=127.0.0.1
    DB_PORT=3306
-   DB_NAME=outdoorbuddy
+   DB_NAME=extrovent
    DB_USER=root
    DB_PASS=
    ```

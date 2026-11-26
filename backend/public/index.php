@@ -437,7 +437,7 @@ function handleRefreshEndpoint(RequestParser $request, ResponseFormatter $respon
         
         // Check user is still active
         $userExists = $container->db()->fetchOne(
-            "SELECT user_id FROM outdoorbuddy_users WHERE user_id = ?",
+            "SELECT user_id FROM users WHERE user_id = ?",
             [$userId]
         );
         
@@ -450,7 +450,7 @@ function handleRefreshEndpoint(RequestParser $request, ResponseFormatter $respon
         // Generate new tokens
         $roles = ['user'];
         $hasProfile = $container->db()->fetchOne(
-            "SELECT id FROM outdoorbuddy_business_profile WHERE user_id = ?",
+            "SELECT id FROM business_profile WHERE user_id = ?",
             [$userId]
         );
         if ($hasProfile) {
