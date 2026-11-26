@@ -192,20 +192,22 @@ server {
         try_files $uri $uri/ /index.html;
     }
 
-    # Backend API — index.php strips the /api/ prefix itself
-    location ~ ^/api/(.*)$ {
-        alias /var/www/extrovent/backend/public/;
-        # Note: with alias + regex, SCRIPT_FILENAME must be explicit:
-        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
-        include fastcgi_params;
-        fastcgi_param SCRIPT_FILENAME /var/www/extrovent/backend/public/index.php;
-        fastcgi_param SCRIPT_NAME /index.php;
-        fastcgi_param REQUEST_URI $request_uri;
+    # Backend API — direct FastCGI pass, no rewrite.
+    # index.php strips the /api/ prefix itself, so keep the original
+    # REQUEST_URI intact (fastcgi_params already sets it to $request_uri).
+    # Same pattern as netvid.conf — do NOT use regex + alias here.
+    location /api/ {
+        include             fastcgi_params;
+        fastcgi_pass        unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param       SCRIPT_FILENAME /var/www/extrovent/backend/public/index.php;
+        fastcgi_param       SCRIPT_NAME     /index.php;
         client_max_body_size 6M;
     }
 
-    # Optional: swagger UI served by backend
-    location = /swagger { return 301 /api/../swagger/; }
+    # Block hidden files (.env, .git, etc.)
+    location ~ /\. {
+        deny all;
+    }
 
     access_log /var/log/nginx/extrovent_access.log;
     error_log  /var/log/nginx/extrovent_error.log;
@@ -221,21 +223,7 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-Simpler alternative if the regex-alias gives trouble — serve API via a prefix location with root rewrite:
-
-```nginx
-location /api/ {
-    root /var/www/extrovent/backend/public;
-    rewrite ^/api/(.*)$ /index.php last;
-}
-location ~ \.php$ {
-    fastcgi_pass unix:/run/php/php8.3-fpm.sock;
-    include fastcgi_params;
-    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
-}
-```
-
-Pick one style and test with `sudo nginx -t`.
+Test with `sudo nginx -t`. If `/api/*` still 500s, check `sudo tail -20 /var/log/nginx/extrovent_error.log` — a sock-name mismatch (`ls /run/php/`) or PHP fatal is the usual cause, not the location block.
 
 ---
 
