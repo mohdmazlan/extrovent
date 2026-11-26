@@ -11,8 +11,10 @@
  *   php migrate.php --list            Show applied / pending files
  *   php migrate.php --dry-run         Show what would run, change nothing
  *   php migrate.php --file=foo.sql    Run one file only (even if applied)
- *   php migrate.php --baseline        Import ref_folder/extrovent.sql first
- *                                     if core tables are missing
+ *   php migrate.php --baseline        Import database/baseline-schema.sql
+ *                                     (tracked, structure-only) if core
+ *                                     tables are missing. For data restores,
+ *                                     import a mysqldump backup separately.
  *   php migrate.php --fresh           Drop auth tables + clear tracking, re-run all
  *                                     (destructive — dev only)
  *
@@ -45,7 +47,10 @@ $user   = $_ENV['DB_USER'] ?? 'root';
 $pass   = $_ENV['DB_PASS'] ?? '';
 
 $migrationsDir = __DIR__ . '/migrations';
-$baselineFile  = realpath(__DIR__ . '/../ref_folder/extrovent.sql')
+$baselineFile  = realpath(__DIR__ . '/database/baseline-schema.sql')
+    ?: (__DIR__ . '/database/baseline-schema.sql');
+// Local-dev fallback: full dump with seed data (NOT committed, stays on dev machines).
+$baselineFallback = realpath(__DIR__ . '/../ref_folder/extrovent.sql')
     ?: (__DIR__ . '/../ref_folder/extrovent.sql');
 
 echo "========================================\n";
@@ -156,17 +161,24 @@ if ($fresh) {
     }
 }
 
-// --baseline: import core schema dump if core tables are missing.
+// --baseline: import core schema if core tables are missing.
 if ($baseline) {
     $hasUsers = (bool) $pdo->query("SHOW TABLES LIKE 'users'")->fetchColumn();
     if ($hasUsers) {
         echo "Baseline: users exists, skipping baseline import.\n\n";
-    } elseif (!is_file($baselineFile)) {
-        echo "✗ Baseline requested but file not found: {$baselineFile}\n";
-        exit(1);
     } else {
-        echo "Baseline: importing " . basename((string) $baselineFile) . " ...\n";
-        runSqlFile($pdo, (string) $baselineFile, $dryRun);
+        // Prefer the tracked structure-only schema; fall back to the
+        // local-only full dump (with seed data) on dev machines.
+        $source = is_file($baselineFile) ? $baselineFile
+            : (is_file($baselineFallback) ? $baselineFallback : null);
+        if ($source === null) {
+            echo "✗ Baseline requested but no source found:\n";
+            echo "    - {$baselineFile}\n";
+            echo "    - {$baselineFallback}\n";
+            exit(1);
+        }
+        echo "Baseline: importing " . basename((string) $source) . " ...\n";
+        runSqlFile($pdo, (string) $source, $dryRun);
         echo "\n";
     }
 }

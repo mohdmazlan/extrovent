@@ -52,9 +52,9 @@ Expected layout:
 
 ```
 /var/www/extrovent/backend/public/index.php
+/var/www/extrovent/backend/database/baseline-schema.sql
 /var/www/extrovent/extrovent_web/
-/var/www/extrovent/ref_folder/extrovent.sql
-/var/www/extrovent/backend/migrations/create_user_sessions_table.sql
+/var/www/extrovent/backend/migrations/
 ```
 
 ---
@@ -70,23 +70,28 @@ FLUSH PRIVILEGES;
 SQL
 ```
 
-Import base schema + JWT/session migrations via runner (`backend/migrate.php`, HRMS-style — runs every `migrations/*.sql` once, tracked in `schema_migrations`):
+One command does it all (`backend/migrate.php` creates the DB if missing,
+imports the tracked structure-only baseline `database/baseline-schema.sql`
+when `users` is absent, then applies every pending `migrations/*.sql` once,
+tracked in `schema_migrations`):
 
 ```bash
 cd /var/www/extrovent/backend
 composer install --no-dev --optimize-autoloader
 # make sure .env DB_* points at this server first (see §4)
-php migrate.php --list
-php migrate.php --dry-run
-php migrate.php --baseline   # imports ref_folder/extrovent.sql if users is missing
-php migrate.php              # applies pending migrations
+php migrate.php --list       # preview applied vs pending
+php migrate.php --dry-run    # preview without changing anything
+php migrate.php --baseline && php migrate.php   # full setup in one go
 ```
 
-Manual fallback (same result without the runner):
+For a data restore instead of an empty schema: import a mysqldump backup
+first (the tracked baseline is structure-only by design — the old dump with
+real user emails/hashes is deliberately NOT committed), then run
+`php migrate.php` to apply renames + session tables:
 
 ```bash
-mysql -u extrovent -p extrovent < /var/www/extrovent/ref_folder/extrovent.sql
-mysql -u extrovent -p extrovent < /var/www/extrovent/backend/migrations/create_user_sessions_table.sql
+mysql -u extrovent -p extrovent < /tmp/your-backup.sql
+php migrate.php
 ```
 
 > Note: tables use unprefixed names (`users`, `events`, `business_profile`, ...). If your server DB was built from the old dump, `php migrate.php` runs `rename_outdoorbuddy_prefix.sql` to rename them automatically (idempotent — fresh installs are a no-op).
