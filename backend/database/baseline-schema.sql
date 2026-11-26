@@ -453,12 +453,13 @@ CREATE TABLE `users` (
 --
 
 CREATE TABLE `user_details` (
-  `id` int(16) NOT NULL,
+  `id` int(11) NOT NULL AUTO_INCREMENT,
   `user_id` varchar(255) COLLATE utf8_unicode_ci NOT NULL,
   `first_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `last_name` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `no_ic` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `no_matrik` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
   `no_phone` varchar(255) COLLATE utf8_unicode_ci DEFAULT NULL,
-  `department_id` int(11) DEFAULT NULL
+  `department_id` int(11) DEFAULT NULL,
+  PRIMARY KEY (`id`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
