@@ -1,0 +1,1292 @@
+openapi: 3.0.3
+info:
+  title: Extrovent API
+  description: 'Extrovent Backend API - a social discovery platform for outdoor activities, events, and places.'
+  version: 1.0.0
+  contact:
+    name: Extrovent Team
+    email: dev@extrovent.local
+
+servers:
+  - url: http://localhost/api
+    description: Local development server
+  - url: https://api.extrovent.com
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Auth
+    description: Authentication and user session management
+  - name: User
+    description: User profiles and account management
+  - name: Event
+    description: Events CRUD, ratings, likes, and participation
+  - name: Place
+    description: Places and locations CRUD and ratings
+  - name: Activity
+    description: Activities CRUD and ratings
+  - name: Post
+    description: Social posts, likes, and comments
+  - name: Business
+    description: Business profiles management
+  - name: Chatroom
+    description: Real-time chat messaging
+  - name: Friend
+    description: Friend requests and social connections
+  - name: Search
+    description: Unified search across all entities
+
+paths:
+  /auth/signup:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Register a new user
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user_id, email, password]
+              properties:
+                user_id:
+                  type: string
+                  description: Unique user identifier
+                nickname:
+                  type: string
+                  description: Display name
+                email:
+                  type: string
+                  format: email
+                gender:
+                  type: string
+                  enum: [male, female, other]
+                password:
+                  type: string
+                  minLength: 6
+                  description: Password (will be hashed with bcrypt)
+                confirm_password:
+                  type: string
+                  description: Password confirmation
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validation error or user already exists
+
+  /auth/login:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Login and receive JWT tokens
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user_id, password]
+              properties:
+                user_id:
+                  type: string
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Invalid credentials
+        '429':
+          description: Too many login attempts, try again later
+
+  /auth/refresh:
+    post:
+      security: []
+      tags: [Auth]
+      summary: Refresh access token using refresh token
+      operationId: refreshToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+                  description: Valid refresh token from previous login
+                session_id:
+                  type: string
+                  description: Optional session ID for activity tracking
+      responses:
+        '200':
+          description: New tokens issued successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefreshResponse'
+        '401':
+          description: Invalid or expired refresh token
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout and blacklist current token
+      operationId: logout
+      requestBody:
+        required: false
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                session_id:
+                  type: string
+                  description: Optional session ID to revoke
+      responses:
+        '200':
+          description: Successfully logged out
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LogoutResponse'
+        '401':
+          description: Missing or invalid authorization token
+
+  /auth/check-organizer:
+    post:
+      tags: [Auth]
+      summary: Check if user is an organizer
+      operationId: checkOrganizerStatus
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user_id]
+              properties:
+                user_id:
+                  type: string
+      responses:
+        '200':
+          description: Organizer status
+        '401':
+          description: Missing or invalid authorization token
+
+  /user/profile:
+    get:
+      tags: [User]
+      summary: Get own user profile (requires Bearer token)
+      operationId: getProfile
+      responses:
+        '200':
+          description: Profile data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          description: Missing or invalid authorization token
+
+  /user/update:
+    put:
+      tags: [User]
+      summary: Update user profile (requires Bearer token)
+      operationId: updateProfile
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                email:
+                  type: string
+                first_name:
+                  type: string
+                last_name:
+                  type: string
+                no_ic:
+                  type: string
+                no_matrik:
+                  type: string
+                no_phone:
+                  type: string
+      responses:
+        '200':
+          description: Profile updated
+        '401':
+          description: Missing or invalid authorization token
+
+  /user/update-profile-pic:
+    put:
+      tags: [User]
+      summary: Update profile picture (requires Bearer token and file upload)
+      operationId: updateProfilePic
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [avatar]
+              properties:
+                avatar:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: Avatar updated
+        '401':
+          description: Missing or invalid authorization token
+
+  /user/search:
+    get:
+      tags: [User]
+      summary: Search users by nickname or email (requires Bearer token)
+      operationId: searchUsers
+      parameters:
+        - name: search
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Search results
+        '401':
+          description: Missing or invalid authorization token
+
+  /user/get-all:
+    get:
+      tags: [User]
+      summary: Get all users (requires Bearer token)
+      operationId: getAllUsers
+      responses:
+        '200':
+          description: User list
+        '401':
+          description: Missing or invalid authorization token
+
+  /user/contact:
+    get:
+      tags: [User]
+      summary: Get user contacts and friends (requires Bearer token)
+      operationId: getContacts
+      responses:
+        '200':
+          description: Contact list
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/create:
+    post:
+      tags: [Event]
+      summary: Create a new event (requires Bearer token)
+      operationId: createEvent
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [category, title, place_id, start_date, start_time, description]
+              properties:
+                category:
+                  type: string
+                title:
+                  type: string
+                place_id:
+                  type: integer
+                fee:
+                  type: integer
+                  default: 0
+                start_date:
+                  type: string
+                  format: date
+                start_time:
+                  type: string
+                  format: time
+                description:
+                  type: string
+                business_profile_id:
+                  type: integer
+                  default: 0
+      responses:
+        '200':
+          description: Event created
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/list:
+    get:
+      tags: [Event]
+      summary: Get all events (requires Bearer token)
+      operationId: getAllEvents
+      parameters:
+        - name: place_id
+          in: query
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List of events
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/get:
+    get:
+      tags: [Event]
+      summary: Get a single event by ID (requires Bearer token)
+      operationId: getEventById
+      parameters:
+        - name: event_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Event details
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/update:
+    put:
+      tags: [Event]
+      summary: Update an event (requires Bearer token and ownership)
+      operationId: updateEvent
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [event_id]
+              properties:
+                event_id:
+                  type: integer
+                category:
+                  type: string
+                title:
+                  type: string
+                place_id:
+                  type: integer
+                fee:
+                  type: integer
+                start_date:
+                  type: string
+                  format: date
+                start_time:
+                  type: string
+                  format: time
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Event updated
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/delete:
+    delete:
+      tags: [Event]
+      summary: Delete an event (requires Bearer token and ownership)
+      operationId: deleteEvent
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [event_id]
+              properties:
+                event_id:
+                  type: integer
+      responses:
+        '200':
+          description: Event deleted
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/my:
+    get:
+      tags: [Event]
+      summary: Get events created by the authenticated user (requires Bearer token)
+      operationId: getMyEvents
+      responses:
+        '200':
+          description: Own events
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/join:
+    post:
+      tags: [Event]
+      summary: Join an event (requires Bearer token)
+      operationId: joinEvent
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [event_id]
+              properties:
+                event_id:
+                  type: integer
+      responses:
+        '200':
+          description: Joined event
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/participants:
+    get:
+      tags: [Event]
+      summary: Get total participants for an event (requires Bearer token)
+      operationId: getTotalParticipants
+      parameters:
+        - name: event_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Participant count
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/like:
+    post:
+      tags: [Event]
+      summary: Like or unlike an event (requires Bearer token)
+      operationId: likeEvent
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [event_id]
+              properties:
+                event_id:
+                  type: integer
+      responses:
+        '200':
+          description: Like toggled
+        '401':
+          description: Missing or invalid authorization token
+
+  /event/liked:
+    get:
+      tags: [Event]
+      summary: Get events liked by the authenticated user (requires Bearer token)
+      operationId: getLikedEvents
+      responses:
+        '200':
+          description: Liked events
+        '401':
+          description: Missing or invalid authorization token
+
+  /place/create:
+    post:
+      tags: [Place]
+      summary: Create a new place (requires Bearer token)
+      operationId: createPlace
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [name, description]
+              properties:
+                name:
+                  type: string
+                description:
+                  type: string
+                category_location:
+                  type: string
+                coordinate:
+                  type: string
+                business_profile_id:
+                  type: integer
+      responses:
+        '200':
+          description: Place created
+        '401':
+          description: Missing or invalid authorization token
+
+  /place/list:
+    get:
+      tags: [Place]
+      summary: Get all places (requires Bearer token)
+      operationId: getAllPlaces
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+            enum: [restaurant, gym, others]
+      responses:
+        '200':
+          description: Place list
+        '401':
+          description: Missing or invalid authorization token
+
+  /place/get:
+    get:
+      tags: [Place]
+      summary: Get a single place by ID (requires Bearer token)
+      operationId: getPlaceById
+      parameters:
+        - name: place_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Place details
+        '401':
+          description: Missing or invalid authorization token
+
+  /place/update:
+    put:
+      tags: [Place]
+      summary: Update a place (requires Bearer token and ownership)
+      operationId: updatePlace
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [place_id]
+              properties:
+                place_id:
+                  type: integer
+                name:
+                  type: string
+                description:
+                  type: string
+                category_location:
+                  type: string
+                coordinate:
+                  type: string
+      responses:
+        '200':
+          description: Place updated
+        '401':
+          description: Missing or invalid authorization token
+
+  /place/delete:
+    delete:
+      tags: [Place]
+      summary: Delete a place (requires Bearer token and ownership)
+      operationId: deletePlace
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [place_id]
+              properties:
+                place_id:
+                  type: integer
+      responses:
+        '200':
+          description: Place deleted
+        '401':
+          description: Missing or invalid authorization token
+
+  /place/my:
+    get:
+      tags: [Place]
+      summary: Get places created by the authenticated user (requires Bearer token)
+      operationId: getMyPlaces
+      responses:
+        '200':
+          description: Own places
+        '401':
+          description: Missing or invalid authorization token
+
+  /activity/create:
+    post:
+      tags: [Activity]
+      summary: Create a new activity (requires Bearer token)
+      operationId: createActivity
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [category_Activity, name, description]
+              properties:
+                category_Activity:
+                  type: string
+                name:
+                  type: string
+                description:
+                  type: string
+                coordinate:
+                  type: string
+      responses:
+        '200':
+          description: Activity created
+        '401':
+          description: Missing or invalid authorization token
+
+  /activity/list:
+    get:
+      tags: [Activity]
+      summary: Get all activities (requires Bearer token)
+      operationId: getAllActivities
+      responses:
+        '200':
+          description: Activity list
+        '401':
+          description: Missing or invalid authorization token
+
+  /activity/get:
+    get:
+      tags: [Activity]
+      summary: Get a single activity by ID (requires Bearer token)
+      operationId: getActivityById
+      parameters:
+        - name: activity_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Activity details
+        '401':
+          description: Missing or invalid authorization token
+
+  /activity/delete:
+    delete:
+      tags: [Activity]
+      summary: Delete an activity (requires Bearer token and ownership)
+      operationId: deleteActivity
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [activity_id]
+              properties:
+                activity_id:
+                  type: integer
+      responses:
+        '200':
+          description: Activity deleted
+        '401':
+          description: Missing or invalid authorization token
+
+  /post/create:
+    post:
+      tags: [Post]
+      summary: Create a new post (requires Bearer token)
+      operationId: createPost
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                caption:
+                  type: string
+                place_id:
+                  type: integer
+                event_id:
+                  type: string
+                activity_id:
+                  type: integer
+      responses:
+        '200':
+          description: Post created
+        '401':
+          description: Missing or invalid authorization token
+
+  /post/list:
+    get:
+      tags: [Post]
+      summary: Get posts with optional filters (requires Bearer token)
+      operationId: getAllPosts
+      parameters:
+        - name: place_id
+          in: query
+          schema:
+            type: integer
+        - name: activity_id
+          in: query
+          schema:
+            type: integer
+        - name: f_user_id
+          in: query
+          schema:
+            type: string
+        - name: datetime
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        '200':
+          description: Post list
+        '401':
+          description: Missing or invalid authorization token
+
+  /post/like:
+    post:
+      tags: [Post]
+      summary: Like or unlike a post (requires Bearer token)
+      operationId: likePost
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [post_id]
+              properties:
+                post_id:
+                  type: integer
+      responses:
+        '200':
+          description: Like toggled
+        '401':
+          description: Missing or invalid authorization token
+
+  /post/comment:
+    post:
+      tags: [Post]
+      summary: Comment on a post (requires Bearer token)
+      operationId: commentPost
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [post_id, comment]
+              properties:
+                post_id:
+                  type: integer
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Comment added
+        '401':
+          description: Missing or invalid authorization token
+
+  /post/comments:
+    get:
+      tags: [Post]
+      summary: Get comments for a post (requires Bearer token)
+      operationId: getPostComments
+      parameters:
+        - name: post_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Comment list
+        '401':
+          description: Missing or invalid authorization token
+
+  /post/my:
+    get:
+      tags: [Post]
+      summary: Get posts created by the authenticated user (requires Bearer token)
+      operationId: getMyPosts
+      responses:
+        '200':
+          description: Own posts
+        '401':
+          description: Missing or invalid authorization token
+
+  /post/delete:
+    delete:
+      tags: [Post]
+      summary: Delete a post (requires Bearer token and ownership)
+      operationId: deletePost
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [post_id]
+              properties:
+                post_id:
+                  type: integer
+      responses:
+        '200':
+          description: Post deleted
+        '401':
+          description: Missing or invalid authorization token
+
+  /business/register:
+    post:
+      tags: [Business]
+      summary: Register a new business profile (requires Bearer token)
+      operationId: registerBusiness
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [company_name, reg_no, description]
+              properties:
+                company_name:
+                  type: string
+                reg_no:
+                  type: string
+                description:
+                  type: string
+                avatar:
+                  type: string
+      responses:
+        '200':
+          description: Business profile created
+        '401':
+          description: Missing or invalid authorization token
+
+  /business/list:
+    get:
+      tags: [Business]
+      summary: Get all approved business profiles (requires Bearer token)
+      operationId: getAllBusinesses
+      responses:
+        '200':
+          description: Business list
+        '401':
+          description: Missing or invalid authorization token
+
+  /business/get:
+    get:
+      tags: [Business]
+      summary: Get a single business profile by ID (requires Bearer token)
+      operationId: getBusinessById
+      parameters:
+        - name: id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Business details
+        '401':
+          description: Missing or invalid authorization token
+
+  /business/update:
+    put:
+      tags: [Business]
+      summary: Update a business profile (requires Bearer token and ownership)
+      operationId: updateBusiness
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [business_profile_id]
+              properties:
+                business_profile_id:
+                  type: integer
+                company_name:
+                  type: string
+                reg_no:
+                  type: string
+                description:
+                  type: string
+      responses:
+        '200':
+          description: Business profile updated
+        '401':
+          description: Missing or invalid authorization token
+
+  /business/my:
+    get:
+      tags: [Business]
+      summary: Get business profiles of the authenticated user (requires Bearer token)
+      operationId: getMyBusinesses
+      responses:
+        '200':
+          description: Own business profiles
+        '401':
+          description: Missing or invalid authorization token
+
+  /chatroom/create:
+    post:
+      tags: [Chatroom]
+      summary: Create a new chatroom (requires Bearer token)
+      operationId: createChatroom
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                user_id_2:
+                  type: string
+                name:
+                  type: string
+      responses:
+        '200':
+          description: Chatroom created
+        '401':
+          description: Missing or invalid authorization token
+
+  /chatroom/message:
+    post:
+      tags: [Chatroom]
+      summary: Send a message, creates room if needed (requires Bearer token)
+      operationId: sendMessage
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                user_id_2:
+                  type: string
+                room_id:
+                  type: integer
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Message sent
+        '401':
+          description: Missing or invalid authorization token
+
+  /chatroom/list:
+    get:
+      tags: [Chatroom]
+      summary: Get chatrooms of the authenticated user (requires Bearer token)
+      operationId: getChatroomList
+      responses:
+        '200':
+          description: Chatroom list
+        '401':
+          description: Missing or invalid authorization token
+
+  /chatroom/messages:
+    get:
+      tags: [Chatroom]
+      summary: Get messages for a chatroom (requires Bearer token)
+      operationId: getChatroomMessages
+      parameters:
+        - name: room_id
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Message list
+        '401':
+          description: Missing or invalid authorization token
+
+  /chatroom/group-message:
+    post:
+      tags: [Chatroom]
+      summary: Send a message to group chat (requires Bearer token)
+      operationId: sendGroupMessage
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message:
+                  type: string
+      responses:
+        '200':
+          description: Group message sent
+        '401':
+          description: Missing or invalid authorization token
+
+  /friend/request:
+    post:
+      tags: [Friend]
+      summary: Send a friend request (requires Bearer token)
+      operationId: sendFriendRequest
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user_id_2]
+              properties:
+                user_id_2:
+                  type: string
+      responses:
+        '200':
+          description: Friend request sent
+        '401':
+          description: Missing or invalid authorization token
+
+  /friend/requests:
+    get:
+      tags: [Friend]
+      summary: Get pending friend requests (requires Bearer token)
+      operationId: getFriendRequests
+      responses:
+        '200':
+          description: Pending requests
+        '401':
+          description: Missing or invalid authorization token
+
+  /friend/accept:
+    put:
+      tags: [Friend]
+      summary: Accept a friend request (requires Bearer token)
+      operationId: acceptFriendRequest
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              required: [user_id_2]
+              properties:
+                user_id_2:
+                  type: string
+      responses:
+        '200':
+          description: Friend request accepted
+        '401':
+          description: Missing or invalid authorization token
+
+  /friend/list:
+    get:
+      tags: [Friend]
+      summary: Get friends list (requires Bearer token)
+      operationId: getFriendsList
+      responses:
+        '200':
+          description: Friends list
+        '401':
+          description: Missing or invalid authorization token
+
+  /friend/check:
+    get:
+      tags: [Friend]
+      summary: Check if two users are friends (requires Bearer token)
+      operationId: checkFriendship
+      parameters:
+        - name: user_id_2
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Friendship status
+        '401':
+          description: Missing or invalid authorization token
+
+  /search:
+    get:
+      security: []
+      tags: [Search]
+      summary: Unified search across events, places, activities, and users
+      operationId: searchAll
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Search results from all entity types
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 'Bearer token authentication. Send the access token in the Authorization header.'
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        error:
+          type: null
+          example: null
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          type: null
+        error:
+          type: string
+        details:
+          type: object
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                user_id:
+                  type: string
+                nickname:
+                  type: string
+                email:
+                  type: string
+                avatar:
+                  type: string
+                access_token:
+                  type: string
+                  description: JWT access token (24-hour expiration)
+                refresh_token:
+                  type: string
+                  description: JWT refresh token (30-day expiration)
+                token_type:
+                  type: string
+                  example: Bearer
+                expires_in:
+                  type: integer
+                  description: Token lifetime in seconds
+                session_id:
+                  type: string
+                  description: Session identifier for tracking
+                roles:
+                  type: array
+                  items:
+                    type: string
+                  description: User roles (user, organizer)
+    TokenRefreshResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                access_token:
+                  type: string
+                refresh_token:
+                  type: string
+                token_type:
+                  type: string
+                  example: Bearer
+                expires_in:
+                  type: integer
+    LogoutResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Successfully logged out
+    UserProfile:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                nickname:
+                  type: string
+                email:
+                  type: string
+                avatar:
+                  type: string
+    SearchResponse:
+      allOf:
+        - $ref: '#/components/schemas/SuccessResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  title:
+                    type: string
+                  description:
+                    type: string
+                  category:
+                    type: string
+                  type:
+                    type: string
+                    description: '1 equals Place, 2 equals Event, 3 equals Activity, 4 equals User'
+                  images:
+                    type: array
+                    items:
+                      type: string

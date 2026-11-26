@@ -1,0 +1,5 @@
+# Block access to sensitive files
+<FilesMatch "\.(env|gitignore)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>

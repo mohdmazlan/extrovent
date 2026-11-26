@@ -1,0 +1,15 @@
+# Environment
+.env
+
+# Uploads (local filesystem, not in public)
+uploads/
+
+# Composer
+vendor/
+composer.lock
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

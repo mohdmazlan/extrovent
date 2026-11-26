@@ -1,0 +1,20 @@
+{
+  "name": "extrovent/backend",
+  "description": "Extrovent Backend API - Layered Architecture (Models, Repositories, Services, Middleware)",
+  "type": "project",
+  "require": {
+    "php": ">=8.0",
+    "vlucas/phpdotenv": "^5.5",
+    "firebase/php-jwt": "^7.2"
+  },
+  "autoload": {
+    "psr-4": {
+      "Extrovent\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Extrovent\\Tests\\": "tests/"
+    }
+  }
+}
