@@ -26,6 +26,19 @@ $dotenv->load();
 
 // Set debug flag for error responses
 define('APP_DEBUG', (($_ENV['APP_DEBUG'] ?? 'false') === 'true'));
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+
+// Global envelope guarantee: any uncaught Throwable becomes JSON envelope, never HTML
+set_exception_handler(function (\Throwable $e) {
+    $rf = new ResponseFormatter();
+    $rf->handleError($e);
+    $rf->send();
+});
+set_error_handler(function (int $severity, string $message, string $file, int $line) {
+    if (!(error_reporting() & $severity)) return false;
+    throw new \ErrorException($message, 0, $severity, $file, $line);
+});
 
 /**
  * CORS: allow the web frontend cross-origin access.
@@ -106,7 +119,9 @@ function dispatch(string $method, string $path, RequestParser $request, Response
 
         // User routes
         'user/profile'               => ['Extrovent\Services\UserService', 'getProfile', true],
+        'user/view'                  => ['Extrovent\Services\UserService', 'viewUser', true],
         'user/update'                => ['Extrovent\Services\UserService', 'updateProfile', true],
+        'user/password'              => ['Extrovent\Services\AuthService', 'changePassword', true],
         'user/update-profile-pic'    => ['Extrovent\Services\UserService', 'updateAvatar', true],
         'user/search'                => ['Extrovent\Services\UserService', 'searchUsers', true],
         'user/get-all'               => ['Extrovent\Services\UserService', 'getAllUsers', true],
@@ -187,10 +202,9 @@ function dispatch(string $method, string $path, RequestParser $request, Response
     if ($isLoginRoute) {
         $rateLimiter = new RateLimitMiddleware($container->db());
         $loginIp = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        $loginUserId = trim((string) ($request->get('user_id') ?? ''));
-        if ($loginUserId === '') {
-            $loginUserId = null;
-        }
+        $rawIdentifier = trim((string) ($request->get('identifier') ?? $request->get('user_id') ?? $request->get('email') ?? ''));
+        $rawIdentifier = ltrim($rawIdentifier, '@');
+        $loginUserId = $rawIdentifier !== '' ? strtolower($rawIdentifier) : null;
         $rateCheck = $rateLimiter->checkRateLimit($loginIp, $loginUserId);
         if (!$rateCheck['allowed']) {
             $retryAfter = $rateCheck['retry_after'] ?? 60;
@@ -307,26 +321,26 @@ function buildMethodArgs(string $serviceClass, string $methodName, RequestParser
         elseif ($name === 'data') {
             $args[] = $request->all();
         }
-        // Inject specific IDs from request
+        // Inject specific IDs from request (entity ids are UUID strings — no int cast)
         elseif (in_array($name, ['eventId', 'event_id']) || stripos($name, 'event') !== false) {
             $val = $request->get('event_id');
-            if ($val !== null) $args[] = (int) $val;
+            if ($val !== null) $args[] = trim((string) $val);
         }
         elseif (in_array($name, ['placeId', 'place_id']) || stripos($name, 'place') !== false && stripos($name, 'profile') === false) {
             $val = $request->get('place_id');
-            if ($val !== null) $args[] = (int) $val;
+            if ($val !== null) $args[] = trim((string) $val);
         }
         elseif (in_array($name, ['activityId', 'activity_id'])) {
             $val = $request->get('activity_id');
-            if ($val !== null) $args[] = (int) $val;
+            if ($val !== null) $args[] = trim((string) $val);
         }
         elseif (in_array($name, ['postId', 'post_id']) || stripos($name, 'post') !== false && stripos($name, 'comment') === false) {
             $val = $request->get('post_id');
-            if ($val !== null) $args[] = (int) $val;
+            if ($val !== null) $args[] = trim((string) $val);
         }
         elseif (in_array($name, ['roomId', 'room_id'])) {
             $val = $request->get('room_id');
-            if ($val !== null) $args[] = (int) $val;
+            if ($val !== null) $args[] = trim((string) $val);
         }
         // Handle common search/query parameters
         elseif (in_array($name, ['query', 'search', 'q'])) {
@@ -437,7 +451,7 @@ function handleRefreshEndpoint(RequestParser $request, ResponseFormatter $respon
         
         // Check user is still active
         $userExists = $container->db()->fetchOne(
-            "SELECT user_id FROM users WHERE user_id = ?",
+            "SELECT id FROM users WHERE id = ?",
             [$userId]
         );
         

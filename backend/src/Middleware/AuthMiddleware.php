@@ -36,7 +36,8 @@ class AuthMiddleware
         // Verify user still exists in database (logged-in check)
         $this->checkUserActive($userId);
 
-        // Update session activity if available
+        // Sliding window: extend session on every authenticated request (merpati parity)
+        $input['_auth_user_id'] = $userId;
         $this->updateSessionActivity($input);
 
         return $userId;
@@ -87,7 +88,7 @@ class AuthMiddleware
     {
         // Check if user exists — confirms the token owner is still a valid logged-in user
         $userExists = $this->db->fetchOne(
-            "SELECT user_id FROM users WHERE user_id = ?",
+            "SELECT id FROM users WHERE id = ?",
             [$userId]
         );
 
@@ -97,7 +98,8 @@ class AuthMiddleware
     }
 
     /**
-     * Update session activity timestamp.
+     * Sliding window: any authenticated activity extends session 6 months (forever if active).
+     * Mirrors merpati/backend/src/Auth/AuthGuard.php:43 touch.
      */
     private function updateSessionActivity(array $input): void
     {
@@ -105,15 +107,27 @@ class AuthMiddleware
             return;
         }
 
-        // Try to get session_id from request (passed in auth or token payload)
-        $sessionId = $input['session_id'] ?? '';
-
-        if ($sessionId) {
+        $userId = $input['_auth_user_id'] ?? null;
+        if (!$userId) {
             try {
+                $hdr = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+                if (preg_match('/Bearer\s+(\S+)/', $hdr, $m)) {
+                    $dec = $this->jwtService->validateToken($m[1], 'access');
+                    $userId = (string) ($dec->sub ?? '');
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        $sessionId = $input['session_id'] ?? '';
+        try {
+            if ($sessionId) {
                 $this->sessionService->updateActivity($sessionId);
-            } catch (\Throwable $e) {
-                // Fail silently - session tracking is optional
+            } elseif ($userId) {
+                // Extend all active sessions for this user — 6 months sliding
+                $this->sessionService->touchAllSessions($userId);
             }
+        } catch (\Throwable $e) {
+            // Fail silently - session tracking is optional
         }
     }
 

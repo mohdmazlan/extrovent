@@ -89,11 +89,11 @@ class SearchService
 
         // Search users
         $results['users'] = $this->db->fetchAll(
-            "SELECT user_id, nickname, avatar, 'user' AS type 
+            "SELECT id, id AS user_id, username, nickname, avatar, 'user' AS type 
              FROM users 
-             WHERE nickname LIKE ? OR email LIKE ? 
+             WHERE nickname LIKE ? OR username LIKE ? OR email LIKE ? 
              LIMIT 10",
-            [$search, $search]
+            [$search, $search, $search]
         );
 
         return $results;

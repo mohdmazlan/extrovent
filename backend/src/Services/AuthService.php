@@ -17,44 +17,76 @@ class AuthService
     ) {}
 
     /**
-     * POST /auth/login
+     * Extract identifier (email or username/@username) — merpati parity.
+     * Accepts `identifier` or legacy `user_id`/`email` for backward compat.
+     * Trims @ prefix, case-insensitive for username lookup.
+     */
+    private function extractIdentifier(array $data): string
+    {
+        $identifier = trim((string) ($data['identifier'] ?? ''));
+        if ($identifier === '') $identifier = trim((string) ($data['user_id'] ?? ''));
+        if ($identifier === '') $identifier = trim((string) ($data['email'] ?? ''));
+        // strip leading @ like merpati (@alice)
+        $identifier = ltrim($identifier, '@');
+        return $identifier;
+    }
+
+    private function findUserByIdentifier(string $identifier): ?array
+    {
+        // users.id UUID PK, users.username/email UNIQUE, password in user_credentials
+        // Try username (case-insensitive)
+        $row = $this->db->fetchOne(
+            "SELECT u.id as user_id, u.username, u.email, c.password_hash as password FROM users u LEFT JOIN user_credentials c ON c.user_id = u.id WHERE LOWER(u.username) = LOWER(?) LIMIT 1",
+            [$identifier]
+        );
+        if ($row && $row['user_id']) return $row;
+        // Fallback to email
+        $row = $this->db->fetchOne(
+            "SELECT u.id as user_id, u.username, u.email, c.password_hash as password FROM users u LEFT JOIN user_credentials c ON c.user_id = u.id WHERE LOWER(u.email) = LOWER(?) LIMIT 1",
+            [$identifier]
+        );
+        return $row ?: null;
+    }
+
+    /**
+     * POST /auth/login — identifier (email or username) + password, no merchant
      */
     public function login(array $data): array
     {
-        $userId = trim($data['user_id'] ?? '');
+        $identifier = $this->extractIdentifier($data);
         $password = $data['password'] ?? '';
 
-        if (empty($userId) || empty($password)) {
-            throw new AuthException('Missing user_id or password');
+        if (empty($identifier) || empty($password)) {
+            throw new AuthException('Missing identifier or password');
         }
 
-        // Check if user exists first
-        $userRow = $this->db->fetchOne(
-            "SELECT password FROM users WHERE user_id = ?",
-            [$userId]
-        );
+        // Find by identifier (user_id or email) — merpati parity, no merchant
+        $userRow = $this->findUserByIdentifier($identifier);
 
         if (!$userRow) {
-            throw new AuthException('User ID not registered');
+            throw new AuthException('Account does not exist. Please check your email or username or sign up.');
         }
 
-        $storedHash = $userRow['password'];
+        $storedHash = $userRow['password'] ?? '';
+        $userId = $userRow['user_id'];
         $inputHash = md5($password);
+
+        if (empty($storedHash)) throw new AuthException('Account has no password set.');
 
         // Backward compatibility: check md5 first, then bcrypt
         if ($inputHash !== $storedHash && !password_verify($password, $storedHash)) {
-            throw new AuthException('Invalid password');
+            throw new AuthException('Wrong password. Please try again.');
         }
 
         // Migrate to bcrypt if was md5
         if ($inputHash === $storedHash) {
             $newHash = password_hash($password, PASSWORD_DEFAULT);
-            $this->db->update('users', ['password' => $newHash], 'user_id = ?', [$userId]);
+            $this->db->update('user_credentials', ['password_hash' => $newHash], 'user_id = ?', [$userId]);
         }
 
-        // Get user profile
+        // Get user profile (now single-table users with id PK)
         $profile = $this->db->fetchOne(
-            "SELECT user_id, nickname, email, avatar FROM users WHERE user_id = ?",
+            "SELECT id, username, nickname, email, avatar FROM users WHERE id = ?",
             [$userId]
         );
 
@@ -76,7 +108,9 @@ class AuthService
         $refreshData = $this->jwtService->generateRefreshToken($userId);
 
         $result = [
+            'id' => $userId,
             'user_id' => $userId,
+            'username' => $profile['username'] ?? '',
             'nickname' => $profile['nickname'] ?? '',
             'email' => $profile['email'] ?? '',
             'avatar' => $profile['avatar'] ?? '',
@@ -105,17 +139,19 @@ class AuthService
     private function getUserRoles(string $userId): array
     {
         $roles = ['user']; // Default role
-        
-        // Check if user has business profile (organizer role)
-        $hasProfile = $this->db->fetchOne(
-            "SELECT id FROM business_profile WHERE user_id = ?",
-            [$userId]
-        );
-        
+
+        // business_profile.user_id is now CHAR(36) UUID (1-go baseline)
+        try {
+            $hasProfile = $this->db->fetchOne(
+                "SELECT id FROM business_profile WHERE user_id = ?",
+                [$userId]
+            );
+        } catch (\Throwable $e) { $hasProfile = null; }
+
         if ($hasProfile) {
             $roles[] = 'organizer';
         }
-        
+
         return $roles;
     }
 
@@ -124,7 +160,7 @@ class AuthService
      */
     public function checkOrganizerStatus(array $data): array
     {
-        $userId = $data['user_id'] ?? '';
+        $userId = $data['user_id'] ?? $data['id'] ?? '';
 
         if (empty($userId)) {
             throw new AuthException('Missing user_id');
@@ -139,5 +175,31 @@ class AuthService
             'is_organizer' => (bool) $row,
             'status' => $row ? 'approved' : 'not_approved',
         ];
+    }
+
+    /**
+     * Change password — blocks immediate reuse (Option A, no history table).
+     * Expects: current_password, new_password
+     */
+    public function changePassword(string $userId, array $data): array
+    {
+        $current = $data['current_password'] ?? $data['password'] ?? '';
+        $new = $data['new_password'] ?? '';
+        if (empty($current) || empty($new)) throw new AuthException('Missing password fields');
+        if (strlen($new) < 6) throw new AuthException('New password too short');
+
+        $row = $this->db->fetchOne("SELECT password_hash FROM user_credentials WHERE user_id = ?", [$userId]);
+        // Legacy fallback: if credentials row missing, try users.password (old DB)
+        if (!$row) $row = $this->db->fetchOne("SELECT password as password_hash FROM users WHERE id = ? OR username = ? OR email = ?", [$userId, $userId, $userId]);
+        if (!$row) throw new AuthException('Credentials not found');
+        $hash = $row['password_hash'] ?? $row['password'] ?? '';
+        if (!password_verify($current, $hash) && md5($current) !== $hash) throw new AuthException('Current password incorrect');
+        // Block reuse of current password (Google-like immediate)
+        if (password_verify($new, $hash) || md5($new) === $hash) throw new AuthException('Cannot reuse current password');
+        $newHash = password_hash($new, PASSWORD_DEFAULT);
+        $exists = $this->db->fetchOne("SELECT user_id FROM user_credentials WHERE user_id = ?", [$userId]);
+        if ($exists) $this->db->update('user_credentials', ['password_hash' => $newHash], 'user_id = ?', [$userId]);
+        else $this->db->insert('user_credentials', ['user_id' => $userId, 'password_hash' => $newHash]);
+        return ['success' => true];
     }
 }
