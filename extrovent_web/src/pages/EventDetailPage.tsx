@@ -20,7 +20,8 @@ export default function EventDetailPage() {
   useEffect(() => {
     (async () => {
       try {
-        setEvent(await getEvent(Number(id)));
+        if (!id) throw new Error('Missing id');
+        setEvent(await getEvent(id));
       } catch (e) {
         setError(e instanceof ApiError ? e.message : 'Could not load event.');
       } finally {
@@ -34,7 +35,7 @@ export default function EventDetailPage() {
     setJoining(true);
     setJoinMsg(null);
     try {
-      await joinEvent(Number(id));
+      await joinEvent(id);
       setJoinMsg('Joined! See you on the trail 🎉');
     } catch (e) {
       setJoinMsg(e instanceof ApiError ? e.message : 'Could not join event.');

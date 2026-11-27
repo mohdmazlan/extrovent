@@ -1,0 +1,50 @@
+@use '../styles/abstracts/variables' as *;
+
+.wrap {
+  position: relative;
+  width: 100%;
+  height: 200px;
+  border-radius: $radius-lg;
+  overflow: hidden;
+  background: #000;
+  display: grid;
+  place-items: center;
+
+  &:fullscreen,
+  &.fullscreen {
+    height: 100vh;
+    width: 100vw;
+    border-radius: 0;
+    .video {
+      height: 100vh;
+      max-height: 100vh;
+    }
+  }
+}
+
+.video {
+  width: 100%;
+  height: 200px;
+  object-fit: contain;
+  display: block;
+  background: #000;
+
+  .fullscreen & {
+    height: 100vh;
+  }
+}
+
+.fsBtn {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 6px 12px;
+  border-radius: $radius-full;
+  border: none;
+  background: rgba(0, 0, 0, 0.55);
+  color: white;
+  font-size: $fs-xs;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  &:hover { background: rgba(0, 0, 0, 0.75); }
+}

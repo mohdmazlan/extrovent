@@ -1,0 +1,13 @@
+@use '../styles/abstracts/variables' as *;
+.bottomNav { position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: var(--bg-elevated); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-around; z-index: $z-header; display: none; @media (max-width: 1024px) { display: flex; } }
+.item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; color: var(--text-muted); text-decoration: none; background: none; border: none; cursor: pointer; font-size: 10px; &.active { color: var(--accent); } }
+.icon { font-size: 20px; position: relative; line-height: 1; }
+.label { font-size: 10px; letter-spacing: 0.02em; }
+.badge { position: absolute; top: -6px; right: -10px; background: var(--danger); color: #fff; border-radius: 9999px; padding: 1px 5px; font-size: 10px; }
+.sheetOverlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 150; display: flex; align-items: flex-end; }
+.sheet { width: 100%; max-height: 70dvh; background: var(--bg-elevated); border-radius: 16px 16px 0 0; padding: 16px; overflow-y: auto; }
+.sheetHeader { display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 12px; }
+.close { border: none; background: var(--bg-subtle); width: 32px; height: 32px; border-radius: 9999px; cursor: pointer; }
+.sheetGroup { margin-bottom: 16px; }
+.sheetTitle { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 6px; }
+.sheetLink { display: block; padding: 10px 12px; border-radius: 8px; color: var(--text-h); text-decoration: none; &:hover { background: var(--bg-subtle); } }

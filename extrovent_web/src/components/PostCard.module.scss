@@ -1,0 +1,201 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+// ── Facebook-like PostCard (scoped CSS module) ──
+// Consumed via `import styles from './PostCard.module.scss'`.
+
+.postCard {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-md;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+  display: flex;
+  gap: $space-3;
+  padding: $space-3;
+  cursor: pointer;
+  transition:
+    box-shadow $duration-normal $ease-default,
+    border-color $duration-normal $ease-default;
+  text-align: left;
+
+  &:hover {
+    border-color: var(--border);
+    box-shadow: $shadow-md;
+  }
+}
+
+// Avatar link sits outside the card body — no underline, hugs the top
+.avatarLink {
+  text-decoration: none;
+  align-self: flex-start;
+}
+
+.postBody {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.postHeader {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  flex-wrap: wrap;
+  line-height: 1.2;
+}
+
+.authorName {
+  font-size: 15px;
+  font-weight: $fw-semibold;
+  color: var(--text-h);
+  text-decoration: none;
+  @include truncate;
+
+  &:hover {
+    text-decoration: underline;
+    color: var(--text-h);
+  }
+}
+
+.badgeVerified {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent);
+  line-height: 0;
+}
+
+.handle {
+  font-size: 13px;
+  color: var(--text-muted);
+  @include truncate;
+}
+
+.separator {
+  font-size: 13px;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+.time {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+    color: var(--text-muted);
+  }
+}
+
+.more {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: $radius-full;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background $duration-fast $ease-default,
+    color $duration-fast $ease-default;
+
+  &:hover {
+    background: var(--bg-subtle);
+    color: var(--text);
+  }
+
+  &:active {
+    background: var(--bg-muted);
+  }
+}
+
+.contentLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.content {
+  margin: $space-2 0;
+  font-size: $fs-sm;
+  line-height: $lh-normal;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.actionsBar {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  border-top: 1px solid var(--border-subtle);
+  padding: $space-2 0 0;
+  margin-top: $space-2;
+  background: transparent;
+}
+
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: $radius-full;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: $fs-sm;
+  font-weight: $fw-medium;
+  cursor: pointer;
+  transition:
+    background $duration-fast $ease-default,
+    color $duration-fast $ease-default;
+  user-select: none;
+
+  &:hover {
+    background: var(--bg-subtle);
+    color: var(--text);
+  }
+
+  &:active {
+    background: var(--bg-muted);
+  }
+
+  // liked state — heart turns slate (brand) instead of muted grey
+  &.liked {
+    color: $color-slate-primary;
+
+    &:hover {
+      background: var(--accent-soft);
+      color: $color-slate-primary;
+    }
+  }
+
+  &.iconOnly {
+    padding: 6px;
+    min-width: 32px;
+    justify-content: center;
+  }
+}
+
+.actionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.actionCount {
+  font-size: $fs-sm;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}

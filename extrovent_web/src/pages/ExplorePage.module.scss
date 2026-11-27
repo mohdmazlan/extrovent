@@ -1,0 +1,99 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: $space-6;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-4;
+  flex-wrap: wrap;
+
+  h1 {
+    margin: 0;
+    font-family: $font-heading;
+    font-size: $fs-2xl;
+    color: var(--text-h);
+  }
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  flex-wrap: wrap;
+}
+
+.tabs {
+  display: flex;
+  gap: $space-2;
+  padding: $space-1;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-full;
+  width: fit-content;
+}
+
+.tab {
+  padding: $space-2 $space-5;
+  border-radius: $radius-full;
+  font-size: $fs-sm;
+  font-weight: $fw-medium;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all $duration-fast $ease-default;
+
+  &:hover {
+    color: var(--text-h);
+    background: var(--bg-elevated);
+  }
+
+  &.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-weight: $fw-semibold;
+    box-shadow: $shadow-sm;
+  }
+}
+
+.mapWrapper {
+  position: relative;
+}
+
+.chipBar {
+  display: flex;
+  gap: $space-2;
+}
+
+.addHereBar {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3 $space-4;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: $radius-md;
+  flex-wrap: wrap;
+}
+
+.pickedLabel {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  font-family: $font-mono;
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+}

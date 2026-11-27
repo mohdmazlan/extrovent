@@ -1,0 +1,16 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.sidebar { width: 240px; flex-shrink: 0; background: var(--bg-elevated); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100dvh; overflow-y: auto; @include respond(lg) { display: none; } }
+.brand { display: flex; align-items: center; gap: $space-3; padding: $space-6 $space-4; border-bottom: 1px solid var(--border-subtle); }
+.logo { width: 36px; height: 36px; border-radius: $radius-md; @include extrovent-gradient; display: grid; place-items: center; color: white; font-size: $fs-lg; box-shadow: $shadow-sm; }
+.brandText { font-family: $font-heading; font-weight: $fw-bold; font-size: $fs-lg; color: var(--text-h); letter-spacing: -0.02em; }
+.nav { padding: $space-4; display: flex; flex-direction: column; gap: $space-4; }
+.primary { display: flex; flex-direction: column; gap: $space-1; }
+.link { display: flex; align-items: center; gap: $space-3; padding: $space-2 $space-3; border-radius: $radius-md; font-size: $fs-sm; font-weight: $fw-medium; color: var(--text-muted); text-decoration: none; &:hover { background: var(--bg-subtle); color: var(--text-h); } &.active { background: var(--accent); color: var(--accent-text); } }
+.primaryLink { font-weight: $fw-semibold; }
+.icon { width: 20px; text-align: center; }
+.badge { margin-left: auto; background: var(--danger); color: #fff; border-radius: 9999px; padding: 1px 6px; font-size: 11px; .active & { background: #fff; color: var(--accent); } }
+.group { border: 1px solid var(--border-subtle); border-radius: $radius-md; padding: $space-2; }
+.groupTitle { font-size: $fs-xs; font-weight: $fw-semibold; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); cursor: pointer; list-style: none; padding: $space-1 $space-2; }
+.groupItems { display: flex; flex-direction: column; gap: 2px; margin-top: $space-2; }

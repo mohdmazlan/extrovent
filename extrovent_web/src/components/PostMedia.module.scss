@@ -1,0 +1,44 @@
+@use '../styles/abstracts/variables' as *;
+
+// ── Post media (images / video grid) — scoped CSS module ──
+
+.media {
+  margin: $space-2 0;
+  border-radius: $radius-md;
+  overflow: hidden;
+}
+
+// Single image / video fallback: one full-width media item
+.single {
+  width: 100%;
+  border-radius: $radius-md;
+  overflow: hidden;
+  background: var(--bg-subtle);
+
+  img {
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+    display: block;
+  }
+}
+
+// Mixed media (images + videos) rendered as a simple 2-column grid
+.grid {
+  display: grid;
+  gap: $space-2;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.gridImg {
+  width: 100%;
+  max-height: 320px;
+  object-fit: cover;
+  border-radius: $radius-md;
+  display: block;
+}
+
+// Modifier — applied when a click handler is wired up
+.clickable {
+  cursor: pointer;
+}

@@ -19,9 +19,11 @@ export default function RegisterPage() {
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (busy) return;
+    if (fields.password !== fields.confirm_password) return;
     setBusy(true);
     try {
-      await register({ ...fields, user_id: fields.user_id.trim(), gender: 'other' });
+      const username = fields.user_id.trim() || fields.email.split('@')[0];
+      await register({ email: fields.email.trim(), password: fields.password, username, displayName: fields.nickname.trim() || username });
       navigate('/', { replace: true });
     } catch {
       // Error message is already exposed via AuthContext.

@@ -9,19 +9,13 @@ $breakpoints: (
   xl: 1280px
 );
 
+/// Max-width media query (mobile-first styles below the breakpoint).
 @mixin respond($bp) {
   $val: map.get($breakpoints, $bp);
   @if $val {
     @media (max-width: $val) { @content; }
   } @else {
     @warn "Unknown breakpoint #{$bp}";
-  }
-}
-
-@mixin respond-min($bp) {
-  $val: map.get($breakpoints, $bp);
-  @if $val {
-    @media (min-width: $val) { @content; }
   }
 }
 
@@ -47,7 +41,7 @@ $breakpoints: (
   }
 }
 
-// ── Truncate ──
+// ── Text ──
 @mixin truncate {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -61,24 +55,9 @@ $breakpoints: (
   overflow: hidden;
 }
 
-// ── Gradient ──
-@mixin forest-gradient {
-  background: linear-gradient(135deg, $color-forest-900 0%, $color-forest-700 50%, $color-forest-500 100%);
-}
-
-@mixin sunset-gradient {
-  background: linear-gradient(135deg, $color-amber-600 0%, $color-amber-500 50%, $color-amber-400 100%);
-}
-
-@mixin hero-gradient {
-  background: linear-gradient(135deg, #0f2a1d 0%, #1b4332 35%, #2d6a4f 70%, #40916c 100%);
-}
-
-// ── Glass ──
-@mixin glass($blur: 12px) {
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur($blur);
-  -webkit-backdrop-filter: blur($blur);
+// ── Brand gradient (slate) ──
+@mixin extrovent-gradient {
+  background: linear-gradient(135deg, $color-slate-dark 0%, $color-slate-primary 60%, $color-slate-accent 100%);
 }
 
 // ── Focus ring ──
@@ -96,11 +75,7 @@ $breakpoints: (
   }
 }
 
-@mixin container-narrow {
-  @include container($container-narrow);
-}
-
-// ── Animations ──
+// ── Animation ──
 @mixin fade-in($duration: $duration-slow) {
   animation: fadeIn $duration $ease-out both;
 }
@@ -108,10 +83,4 @@ $breakpoints: (
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-@mixin stagger($count: 5, $delay: 60ms) {
-  @for $i from 1 through $count {
-    &:nth-child(#{$i}) { animation-delay: #{$i * $delay}; }
-  }
 }

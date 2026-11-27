@@ -1,10 +1,10 @@
 import { apiFetch } from './apiClient';
 
 export interface EventItem {
-  event_id: number;
+  event_id: string;
   category?: string;
   title?: string;
-  place_id?: number | null;
+  place_id?: string | null;
   fee?: number;
   start_date?: string;
   start_time?: string;
@@ -16,28 +16,28 @@ export interface EventItem {
 export interface NewEvent {
   category: string;
   title: string;
-  place_id: number;
+  place_id: string;
   fee?: number;
   start_date: string;
   start_time: string;
   description: string;
-  business_profile_id?: number;
+  business_profile_id?: string;
 }
 
-export function listEvents(placeId?: number): Promise<EventItem[]> {
-  const q = placeId !== undefined ? `?place_id=${placeId}` : '';
+export function listEvents(placeId?: string): Promise<EventItem[]> {
+  const q = placeId !== undefined ? `?place_id=${encodeURIComponent(placeId)}` : '';
   return apiFetch<EventItem[]>(`/event/list${q}`);
 }
 
-export function getEvent(eventId: number): Promise<EventItem> {
-  return apiFetch<EventItem>(`/event/get?event_id=${eventId}`);
+export function getEvent(eventId: string): Promise<EventItem> {
+  return apiFetch<EventItem>(`/event/get?event_id=${encodeURIComponent(eventId)}`);
 }
 
-export function createEvent(data: NewEvent): Promise<number | { success: boolean }> {
+export function createEvent(data: NewEvent): Promise<string | { success: boolean }> {
   return apiFetch('/event/create', { method: 'POST', json: data });
 }
 
-export function joinEvent(eventId: number): Promise<unknown> {
+export function joinEvent(eventId: string): Promise<unknown> {
   return apiFetch('/event/join', { method: 'POST', json: { event_id: eventId } });
 }
 

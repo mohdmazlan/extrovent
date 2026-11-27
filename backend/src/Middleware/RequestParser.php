@@ -2,6 +2,8 @@
 
 namespace Extrovent\Middleware;
 
+use Extrovent\Exceptions\ValidationException;
+
 /**
  * Request parser middleware.
  * Parses incoming requests (GET, POST, JSON body).
@@ -21,8 +23,12 @@ class RequestParser
         $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
         if (str_contains($contentType, 'application/json')) {
             $json = file_get_contents('php://input');
-            if ($json !== false) {
-                $this->jsonBody = json_decode($json, true) ?? [];
+            if ($json !== false && trim($json) !== '') {
+                $decoded = json_decode($json, true);
+                if (!is_array($decoded)) {
+                    throw new ValidationException('Invalid JSON in request body');
+                }
+                $this->jsonBody = $decoded;
                 // Merge JSON body into input (JSON takes precedence)
                 $this->input = array_merge($this->input, $this->jsonBody);
             }

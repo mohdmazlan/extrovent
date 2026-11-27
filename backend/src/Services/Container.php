@@ -3,24 +3,14 @@
 namespace Extrovent\Services;
 
 use Extrovent\Database\Database;
-use Extrovent\Repositories\UserRepository;
-use Extrovent\Repositories\EventRepository;
-use Extrovent\Repositories\PlaceRepository;
-use Extrovent\Repositories\ActivityRepository;
-use Extrovent\Repositories\PostRepository;
-use Extrovent\Repositories\BusinessProfileRepository;
-use Extrovent\Repositories\ChatroomRepository;
-use Extrovent\Repositories\FriendRepository;
-use Extrovent\Repositories\SearchRepository;
 
 /**
- * Application service container - resolves all services and repositories.
+ * Application service container - resolves all services.
  */
 class Container
 {
     private static ?self $instance = null;
     private array $services = [];
-    private array $repositories = [];
 
     public function __construct(private Database $db) {}
 
@@ -70,28 +60,7 @@ class Container
             return $this->services[$key];
         }
 
-        // Resolve repositories
-        $repoMap = [
-            UserRepository::class => 'user',
-            EventRepository::class => 'event',
-            PlaceRepository::class => 'place',
-            ActivityRepository::class => 'activity',
-            PostRepository::class => 'post',
-            BusinessProfileRepository::class => 'business',
-            ChatroomRepository::class => 'chatroom',
-            FriendRepository::class => 'friend',
-            SearchRepository::class => 'search',
-        ];
-
-        if (isset($repoMap[$type])) {
-            $key = $repoMap[$type];
-            if (!isset($this->repositories[$key])) {
-                $this->repositories[$key] = new $type($this->db);
-            }
-            return $this->repositories[$key];
-        }
-
-        throw new \InvalidArgumentException("Unknown service/repository type: {$type}");
+        throw new \InvalidArgumentException("Unknown service type: {$type}");
     }
 
     public function db(): Database

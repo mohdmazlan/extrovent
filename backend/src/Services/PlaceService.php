@@ -13,6 +13,15 @@ class PlaceService
 {
     public function __construct(private Database $db) {}
 
+    private function genId(): string
+    {
+        $b = random_bytes(16);
+        $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
+        $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
+        $h = bin2hex($b);
+        return sprintf('%s-%s-%s-%s-%s', substr($h,0,8), substr($h,8,4), substr($h,12,4), substr($h,16,4), substr($h,20,12));
+    }
+
     /**
      * Parse an opaque "lat,lng" coordinate string into [lat, lng].
      * Returns null when absent; throws on malformed input.
@@ -38,7 +47,7 @@ class PlaceService
     /**
      * Create a new place.
      */
-    public function create(string $userId, array $data): int
+    public function create(string $userId, array $data): string
     {
         // Validate required fields
         $missing = [];
@@ -57,22 +66,24 @@ class PlaceService
             throw new ValidationException("Missing required fields: coordinate (click the map to set a location)");
         }
 
+        $id = $this->genId();
         $stmt = $this->db->query(
             "INSERT INTO place
-                (name, description, category_location, coordinate, create_date, last_update, verified, user_id, business_profile_id)
-             VALUES (?, ?, ?, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')), NOW(), NOW(), 1, ?, ?)",
+                (id, name, description, category_location, coordinate, create_date, last_update, verified, user_id, business_profile_id)
+             VALUES (?, ?, ?, ?, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')), NOW(), NOW(), 1, ?, ?)",
             [
+                $id,
                 trim($data['name']),
                 trim($data['description'] ?? ''),
                 trim($data['category_location'] ?? 'others'),
                 $coords[0],
                 $coords[1],
                 $userId,
-                isset($data['business_profile_id']) ? (int) $data['business_profile_id'] : 0,
+                !empty($data['business_profile_id']) ? trim((string) $data['business_profile_id']) : null,
             ]
         );
 
-        return (int) $this->db->pdo()->lastInsertId();
+        return $id;
     }
 
     /**
@@ -102,9 +113,9 @@ class PlaceService
     /**
      * Get place by ID.
      */
-    public function getById(int $placeId): ?array
+    public function getById(string $placeId): array
     {
-        return $this->db->fetchOne(
+        $row = $this->db->fetchOne(
             "SELECT p.id, p.category_location, p.name, p.description,
                     CONCAT(ST_X(p.coordinate), ',', ST_Y(p.coordinate)) AS coordinate,
                     p.create_date, p.last_update, p.verified, p.user_id, p.business_profile_id,
@@ -114,19 +125,22 @@ class PlaceService
              WHERE p.id = ?",
             [$placeId]
         );
+        if (!$row) {
+            throw new \Extrovent\Exceptions\NotFoundException('Place not found');
+        }
+        return $row;
     }
 
     /**
      * Update place.
      */
-    public function update(int $placeId, string $userId, array $data): array
+    public function update(string $placeId, string $userId, array $data): array
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
             "SELECT user_id FROM place WHERE id = ?",
             [$placeId]
         );
-
         if ($owner !== $userId) {
             throw new BusinessLogicException('You do not own this place');
         }
@@ -169,14 +183,13 @@ class PlaceService
     /**
      * Delete place.
      */
-    public function delete(int $placeId, string $userId): array
+    public function delete(string $placeId, string $userId): array
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
             "SELECT user_id FROM place WHERE id = ?",
             [$placeId]
         );
-
         if ($owner !== $userId) {
             throw new BusinessLogicException('You do not own this place');
         }
@@ -205,7 +218,7 @@ class PlaceService
     /**
      * Get place images.
      */
-    public function getImages(int $placeId): array
+    public function getImages(string $placeId): array
     {
         return array_map(fn($img) => $img['image_url'], $this->db->fetchAll(
             "SELECT image_url FROM place_image WHERE place_id = ?",

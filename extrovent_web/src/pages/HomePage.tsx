@@ -16,41 +16,14 @@ export default function HomePage() {
           </h1>
           <p className={styles.heroSubtitle}>
             Discover trails, join adventures, and share places with explorers around you. Hello,{' '}
-            <strong style={{ color: 'white' }}>{user?.nickname || user?.user_id}</strong> — your next journey starts
+            <strong className={styles.heroHello}>{user?.nickname || user?.user_id}</strong> — your next journey starts
             here.
           </p>
           <div className={styles.heroActions}>
-            <Link
-              to="/feed"
-              style={{
-                background: 'white',
-                color: '#1b4332',
-                padding: '10px 20px',
-                borderRadius: '9999px',
-                fontWeight: 600,
-                fontSize: '14px',
-                textDecoration: 'none',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-              }}
-            >
+            <Link to="/feed" className={styles.heroBtnPrimary}>
               Explore Feed →
             </Link>
-            <Link
-              to="/events"
-              style={{
-                background: 'rgba(255,255,255,0.14)',
-                color: 'white',
-                border: '1px solid rgba(255,255,255,0.25)',
-                padding: '10px 20px',
-                borderRadius: '9999px',
-                fontWeight: 600,
-                fontSize: '14px',
-                textDecoration: 'none',
-                backdropFilter: 'blur(8px)',
-              }}
-            >
+            <Link to="/events" className={styles.heroBtnGhost}>
               Browse Events
             </Link>
           </div>

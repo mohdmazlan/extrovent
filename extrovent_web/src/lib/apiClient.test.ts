@@ -53,16 +53,23 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
+function makeToken(expOffsetSec = 3600): string {
+  const header = btoa(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const payload = btoa(JSON.stringify({ sub: 'u', exp: Math.floor(Date.now()/1000) + expOffsetSec }));
+  return `${header}.${payload}.sig`;
+}
+
 describe('apiClient', () => {
   it('attaches the Bearer header when a token is stored', async () => {
-    setAccessToken('tok123');
+    const tok = makeToken();
+    setAccessToken(tok);
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: { ok: 1 }, error: null }));
     vi.stubGlobal('fetch', fetchMock);
 
     await apiFetch('/user/profile');
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer tok123');
+    expect((init.headers as Record<string, string>)['Authorization']).toBe(`Bearer ${tok}`);
   });
 
   it('resolves with envelope data and rejects with envelope error', async () => {
@@ -87,13 +94,14 @@ describe('apiClient', () => {
   });
 
   it('refreshes once and retries on 401, then succeeds', async () => {
-    setAccessToken('expired');
+    setAccessToken(makeToken());
     setRefreshToken('refresh-abc');
+    const newTok = makeToken();
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(jsonResponse({ success: false, data: null, error: 'expired' }, 401))
       .mockResolvedValueOnce(
-        jsonResponse({ success: true, data: { access_token: 'new', refresh_token: 'new-r' }, error: null }),
+        jsonResponse({ success: true, data: { access_token: newTok, refresh_token: 'new-r' }, error: null }),
       )
       .mockResolvedValueOnce(jsonResponse({ success: true, data: { me: 1 }, error: null }));
     vi.stubGlobal('fetch', fetchMock);
@@ -103,7 +111,7 @@ describe('apiClient', () => {
   });
 
   it('caps retries at one and forces re-login when refresh fails', async () => {
-    setAccessToken('expired');
+    setAccessToken(makeToken());
     setRefreshToken('dead');
     const onFailure = vi.fn();
     setOnAuthFailure(onFailure);
@@ -119,24 +127,25 @@ describe('apiClient', () => {
   });
 
   it('login stores the token pair', async () => {
+    const tok = makeToken();
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
         jsonResponse({
           success: true,
-          data: { access_token: 'a', refresh_token: 'r', token_type: 'Bearer', expires_in: 86400, user_id: 'u' },
+          data: { access_token: tok, refresh_token: 'r', token_type: 'Bearer', expires_in: 86400, user: { id: 'u', username: 'u' } },
           error: null,
         }),
       ),
     );
     const data = await loginRequest('u', 'p');
-    expect(data.access_token).toBe('a');
+    expect(data.access_token).toBe(tok);
 
     const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: {}, error: null }));
     vi.stubGlobal('fetch', fetchMock);
     await apiFetch('/user/profile');
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-    expect((init.headers as Record<string, string>)['Authorization']).toBe('Bearer a');
+    expect((init.headers as Record<string, string>)['Authorization']).toBe(`Bearer ${tok}`);
   });
 
   it('does not attempt refresh on login 401 (no stored token yet)', async () => {
@@ -146,5 +155,24 @@ describe('apiClient', () => {
     vi.stubGlobal('fetch', fetchMock);
     await expect(loginRequest('u', 'wrong')).rejects.toMatchObject({ status: 401 });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not force JSON content-type when sending FormData', async () => {
+    const fd = new FormData();
+    fd.append('a', '1');
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: {}, error: null }));
+    vi.stubGlobal('fetch', fetchMock);
+    await apiFetch('/upload', { method: 'POST', formData: fd });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>)['Content-Type']).toBeUndefined();
+    expect(init.body).toBe(fd);
+  });
+
+  it('still sends JSON content-type for json bodies', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse({ success: true, data: {}, error: null }));
+    vi.stubGlobal('fetch', fetchMock);
+    await apiFetch('/x', { method: 'POST', json: { a: 1 } });
+    const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect((init.headers as Record<string, string>)['Content-Type']).toBe('application/json');
   });
 });

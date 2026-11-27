@@ -1,0 +1,110 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.wrap {
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.title {
+  margin: 0 0 $space-6;
+  @include fade-in;
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+}
+
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: $space-3;
+}
+
+.row {
+  @include card(elevated);
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  padding: $space-4;
+  cursor: pointer;
+  &:hover { background: var(--bg-subtle); }
+  &:focus-visible { @include focus-ring; }
+}
+
+.unread {
+  border-color: rgba($color-slate-primary, 0.35);
+  background: linear-gradient(0deg, var(--bg-elevated), var(--bg-elevated)), rgba($color-slate-primary, 0.06);
+}
+
+.icon {
+  width: 40px;
+  height: 40px;
+  border-radius: $radius-full;
+  background: var(--bg-subtle);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: $fs-md;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.text {
+  color: var(--text-h);
+  font-size: $fs-sm;
+  @include line-clamp(2);
+}
+
+.meta {
+  display: flex;
+  gap: $space-3;
+  align-items: center;
+  font-size: $fs-xs;
+  color: var(--text-muted);
+}
+
+.type {
+  text-transform: capitalize;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  padding: 2px 6px;
+  border-radius: $radius-full;
+}
+
+.time {
+  color: var(--text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: $space-2;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.viewLink {
+  font-size: $fs-sm;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: $fw-medium;
+  &:hover { text-decoration: underline; }
+}
+
+.done {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+}

@@ -1,0 +1,132 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: $space-4;
+  &:hover { color: var(--accent); }
+}
+
+.card {
+  overflow: hidden;
+  max-width: 640px;
+  margin: 0 auto;
+  @include fade-in;
+}
+
+.cardHeader {
+  padding: $space-6;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: $space-3;
+
+  h1 {
+    margin: 0;
+    font-size: $fs-2xl;
+  }
+}
+
+.body {
+  padding: $space-6;
+  display: grid;
+  gap: $space-5;
+
+  @include respond(sm) {
+    padding: $space-4;
+  }
+}
+
+.fieldRow {
+  display: flex;
+  gap: $space-3;
+  align-items: flex-end;
+
+  @include respond(sm) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+.fieldInput {
+  flex: 1;
+  min-width: 0;
+}
+
+.fieldDisplay {
+  font-size: $fs-sm;
+  color: var(--text);
+  padding: $space-2 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.readonly {
+  display: grid;
+  gap: $space-3;
+  color: var(--text-muted);
+  font-size: $fs-sm;
+}
+
+.avatarSection {
+  display: grid;
+  gap: $space-3;
+  padding-top: $space-4;
+  border-top: 1px solid var(--border-subtle);
+
+  h3 {
+    margin: 0;
+    font-size: $fs-md;
+  }
+}
+
+.avatarPreview {
+  width: 96px;
+  height: 96px;
+  border-radius: $radius-full;
+  object-fit: cover;
+  border: 2px solid var(--border);
+  box-shadow: $shadow-sm;
+}
+
+.fileInput {
+  font-size: $fs-sm;
+  color: var(--text-muted);
+
+  &::file-selector-button {
+    padding: $space-2 $space-4;
+    border-radius: $radius-full;
+    border: 1px solid var(--border);
+    background: var(--bg-elevated);
+    color: var(--text-h);
+    cursor: pointer;
+    font-weight: $fw-medium;
+    margin-right: $space-3;
+  }
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+}
+
+.success {
+  background: rgba(45, 106, 79, 0.08);
+  border: 1px solid rgba(45, 106, 79, 0.2);
+  color: $color-slate-dark;
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+}

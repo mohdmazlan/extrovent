@@ -52,9 +52,8 @@ Expected layout:
 
 ```
 /var/www/extrovent/backend/public/index.php
-/var/www/extrovent/backend/database/baseline-schema.sql
+/var/www/extrovent/backend/database/schema.sql
 /var/www/extrovent/extrovent_web/
-/var/www/extrovent/backend/migrations/
 ```
 
 ---
@@ -71,17 +70,15 @@ SQL
 ```
 
 One command does it all (`backend/migrate.php` creates the DB if missing,
-imports the tracked structure-only baseline `database/baseline-schema.sql`
-when `users` is absent, then applies every pending `migrations/*.sql` once,
-tracked in `schema_migrations`):
+then imports the single complete schema `database/schema.sql` — all 33 tables
+in one go — when `users` is absent; re-runs are a safe no-op):
 
 ```bash
 cd /var/www/extrovent/backend
 composer install --no-dev --optimize-autoloader
 # make sure .env DB_* points at this server first (see §4)
-php migrate.php --list       # preview applied vs pending
 php migrate.php --dry-run    # preview without changing anything
-php migrate.php --baseline && php migrate.php   # full setup in one go
+php migrate.php              # full setup in one go
 ```
 
 For a data restore instead of an empty schema: import a mysqldump backup

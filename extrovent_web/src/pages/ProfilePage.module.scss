@@ -37,7 +37,7 @@
   width: 64px;
   height: 64px;
   border-radius: $radius-full;
-  @include forest-gradient;
+  @include extrovent-gradient;
   display: grid;
   place-items: center;
   color: white;
@@ -92,7 +92,7 @@
 .success {
   background: rgba(45, 106, 79, 0.08);
   border: 1px solid rgba(45, 106, 79, 0.2);
-  color: $color-forest-700;
+  color: $color-slate-dark;
   padding: $space-3 $space-4;
   border-radius: $radius-md;
   font-size: $fs-sm;

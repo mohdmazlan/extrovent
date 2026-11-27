@@ -112,6 +112,18 @@ class UserSessionService
     }
 
     /**
+     * Sliding window: extend all active sessions for a user on every auth (merpati parity).
+     * 6 months = 15552000 seconds.
+     */
+    public function touchAllSessions(string $userId): void
+    {
+        $this->db->query(
+            "UPDATE user_sessions SET last_activity_at = NOW(), expires_at = DATE_ADD(NOW(), INTERVAL 15552000 SECOND), updated_at = NOW() WHERE user_id = ? AND status = 'active' AND expires_at > NOW()",
+            [$userId]
+        );
+    }
+
+    /**
      * Clean up expired sessions.
      *
      * @return int Number of sessions cleaned up

@@ -1,0 +1,11 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.wrapper { position: relative; }
+.trigger { display: flex; align-items: center; gap: $space-2; padding: $space-1 $space-2 $space-1 $space-3; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: $radius-full; cursor: pointer; font-size: $fs-sm; color: var(--text-h); &:hover { background: var(--bg-elevated); border-color: var(--border-strong); } }
+.name { max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.avatar { width: 32px; height: 32px; border-radius: $radius-full; @include extrovent-gradient; display: grid; place-items: center; color: white; font-weight: $fw-bold; font-size: $fs-sm; flex-shrink: 0; }
+.caret { font-size: 10px; color: var(--text-muted); }
+.backdrop { position: fixed; inset: 0; z-index: 40; }
+.menu { position: absolute; top: calc(100% + 8px); right: 0; min-width: 180px; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: $radius-md; box-shadow: $shadow-md; z-index: 50; display: flex; flex-direction: column; padding: $space-2; }
+.item { display: block; width: 100%; text-align: left; padding: $space-2 $space-3; border-radius: $radius-sm; color: var(--text-h); text-decoration: none; background: none; border: none; cursor: pointer; font-size: $fs-sm; &:hover { background: var(--bg-subtle); } }

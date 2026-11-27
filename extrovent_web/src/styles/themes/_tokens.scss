@@ -1,68 +1,95 @@
 @use '../abstracts/variables' as *;
 
-// ── Light theme (default) ──
-:root {
-  --bg: #ffffff;
-  --bg-elevated: #ffffff;
-  --bg-muted: #fdfbf7;
-  --bg-subtle: #f8f7f5;
+// ── Design tokens ──
+// Slate-blue parity with the Android app (colors.xml): #737BAE / #2C4E64 / #A4CCD1
+// Each theme is defined once as a mixin so :root, prefers-color-scheme, and
+// [data-theme] overrides can never drift apart.
 
-  --text: #6b6375;
+@mixin light-tokens {
+  --bg: #f7f7f7;
+  --bg-elevated: #ffffff;
+  --bg-muted: #f1f3f6;
+  --bg-subtle: #eef1f5;
+
+  --text: #333333;
   --text-h: #1a1a1e;
-  --text-muted: #9ca3af;
+  --text-muted: #888888;
   --text-inverse: #ffffff;
 
-  --border: #e8e6dd;
-  --border-strong: #d4d0c4;
-  --border-subtle: #f0ede6;
+  --border: #d8dde6;
+  --border-strong: #c2c9d6;
+  --border-subtle: #e6e9ee;
 
-  --accent: #{$color-forest-700};
-  --accent-hover: #{$color-forest-900};
-  --accent-soft: #{rgba($color-forest-700, 0.08)};
-  --accent-ring: #{rgba($color-forest-500, 0.35)};
+  --accent: #{$color-slate-primary};
+  --accent-hover: #{$color-slate-dark};
+  --accent-soft: rgba(#{$color-slate-accent}, 0.18);
+  --accent-ring: rgba(#{$color-slate-primary}, 0.35);
   --accent-text: #ffffff;
 
-  --success: #2d6a4f;
+  --success: #737BAE;
   --warning: #e76f51;
   --danger: #c0392b;
   --info: #264653;
 
+  --header-bg: rgba(255, 255, 255, 0.85);
   --code-bg: #f4f3ec;
-  --social-bg: rgba(244, 243, 236, 0.5);
 
   --shadow-sm: #{$shadow-sm};
   --shadow-md: #{$shadow-md};
   --shadow-lg: #{$shadow-lg};
 }
 
-// ── Dark theme ──
+@mixin dark-tokens {
+  --bg: #111210;
+  --bg-elevated: #1c1e1b;
+  --bg-muted: #232622;
+  --bg-subtle: #1a1d1a;
+
+  --text: #a8a9a0;
+  --text-h: #f0ede6;
+  --text-muted: #7a7d75;
+  --text-inverse: #111210;
+
+  --border: #2e332b;
+  --border-strong: #3d4238;
+  --border-subtle: #232622;
+
+  --accent: #737BAE;
+  --accent-hover: #A4CCD1;
+  --accent-soft: rgba(115, 123, 174, 0.12);
+  --accent-ring: rgba(115, 123, 174, 0.35);
+  --accent-text: #ffffff;
+
+  --success: #737BAE;
+  --warning: #e76f51;
+  --danger: #c0392b;
+  --info: #264653;
+
+  --header-bg: rgba(28, 30, 27, 0.85);
+  --code-bg: #1f2420;
+
+  --shadow-sm: #{$shadow-sm};
+  --shadow-md: #{$shadow-md};
+  --shadow-lg: #{$shadow-lg};
+}
+
+// Light is the default theme
+:root {
+  @include light-tokens;
+}
+
+// System preference — skipped when the user forced light via [data-theme]
 @media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111210;
-    --bg-elevated: #1c1e1b;
-    --bg-muted: #232622;
-    --bg-subtle: #1a1d1a;
-
-    --text: #a8a9a0;
-    --text-h: #f0ede6;
-    --text-muted: #7a7d75;
-    --text-inverse: #111210;
-
-    --border: #2e332b;
-    --border-strong: #3d4238;
-    --border-subtle: #232622;
-
-    --accent: #{$color-forest-300};
-    --accent-hover: #7bc8a0;
-    --accent-soft: #{rgba($color-forest-300, 0.12)};
-    --accent-ring: #{rgba($color-forest-300, 0.35)};
-    --accent-text: #0f2a1d;
-
-    --code-bg: #1f2420;
-    --social-bg: rgba(47, 48, 58, 0.5);
+  :root:not([data-theme='light']) {
+    @include dark-tokens;
   }
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+// Explicit Settings toggle (overrides prefers-color-scheme)
+[data-theme='light'] {
+  @include light-tokens;
+}
+
+[data-theme='dark'] {
+  @include dark-tokens;
 }

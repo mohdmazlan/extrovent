@@ -1,12 +1,12 @@
 import { apiFetch } from './apiClient';
 
 export interface Place {
-  id: number;
+  id: string;
   name?: string | null;
   description?: string | null;
   category_location?: string | null;
   coordinate?: string | null;
-  business_profile_id?: number | null;
+  business_profile_id?: string | null;
   company_name?: string | null;
 }
 
@@ -15,7 +15,7 @@ export interface NewPlace {
   description: string;
   category_location?: string;
   coordinate?: string;
-  business_profile_id?: number;
+  business_profile_id?: string;
 }
 
 export function listPlaces(category?: string): Promise<Place[]> {
@@ -23,11 +23,11 @@ export function listPlaces(category?: string): Promise<Place[]> {
   return apiFetch<Place[]>(`/place/list${q}`);
 }
 
-export function getPlace(placeId: number): Promise<Place> {
-  return apiFetch<Place>(`/place/get?place_id=${placeId}`);
+export function getPlace(placeId: string): Promise<Place> {
+  return apiFetch<Place>(`/place/get?place_id=${encodeURIComponent(placeId)}`);
 }
 
-export function createPlace(data: NewPlace): Promise<number | { success: boolean }> {
+export function createPlace(data: NewPlace): Promise<string | { success: boolean }> {
   return apiFetch('/place/create', { method: 'POST', json: data });
 }
 

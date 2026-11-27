@@ -1,0 +1,7 @@
+.container { display: flex; flex-direction: column; gap: 16px; }
+.breadcrumb { color: var(--accent); text-decoration: none; font-size: 14px; &:hover { text-decoration: underline; } }
+.section { padding: 20px; h3 { margin: 0 0 6px; } }
+.hint { margin: 0 0 12px; color: var(--text-muted); font-size: 14px; }
+.segment { display: inline-flex; border: 1px solid var(--border); border-radius: 9999px; overflow: hidden; }
+.segBtn { padding: 8px 16px; background: var(--bg-elevated); border: none; cursor: pointer; font-size: 14px; color: var(--text-muted); &.active { background: var(--accent); color: var(--accent-text); font-weight: 600; } }
+.saved { margin-top: 10px; color: var(--accent); font-size: 13px; }

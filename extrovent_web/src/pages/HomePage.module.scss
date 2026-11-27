@@ -6,7 +6,7 @@
   border-radius: $radius-xl;
   overflow: hidden;
   padding: $space-12 $space-8;
-  @include hero-gradient;
+  @include extrovent-gradient;
   color: white;
   @include fade-in;
 
@@ -89,6 +89,45 @@
   display: flex;
   gap: $space-3;
   flex-wrap: wrap;
+}
+
+// Hero CTA buttons (previously inline `style={{...}}`)
+.heroBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px $space-5;
+  background: white;
+  color: $color-slate-dark;
+  border-radius: $radius-full;
+  font-weight: $fw-semibold;
+  font-size: $fs-sm;
+  text-decoration: none;
+
+  // Global `a:hover` recolours links; inline styles used to win — keep it stable.
+  &:hover {
+    color: $color-slate-dark;
+  }
+}
+
+.heroBtnGhost {
+  padding: 10px $space-5;
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: $radius-full;
+  font-weight: $fw-semibold;
+  font-size: $fs-sm;
+  text-decoration: none;
+  backdrop-filter: blur(8px);
+
+  &:hover {
+    color: white;
+  }
+}
+
+.heroHello {
+  color: white;
 }
 
 .stats {
@@ -210,9 +249,9 @@
 }
 
 .iconFeed {
-  background: rgba($color-forest-500, 0.12);
-  color: $color-forest-700;
-  border: 1px solid rgba($color-forest-500, 0.2);
+  background: rgba($color-slate-accent, 0.18);
+  color: $color-slate-dark;
+  border: 1px solid rgba($color-slate-primary, 0.2);
 }
 
 .iconEvents {

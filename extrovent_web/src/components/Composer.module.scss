@@ -1,0 +1,47 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.composer {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-md;
+  box-shadow: $shadow-sm;
+  cursor: pointer;
+  transition:
+    background $duration-normal $ease-default,
+    border-color $duration-normal $ease-default,
+    box-shadow $duration-normal $ease-default;
+
+  &:hover {
+    background: var(--bg-subtle);
+    border-color: var(--border);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+}
+
+.pill {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  background: var(--bg-subtle);
+  border-radius: $radius-full;
+  padding: 10px 16px;
+  color: var(--text-muted);
+  font-size: $fs-sm;
+  line-height: $lh-normal;
+  text-decoration: none;
+  transition: background $duration-normal $ease-default;
+  @include truncate;
+
+  &:hover {
+    background: var(--bg-muted);
+  }
+}

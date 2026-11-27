@@ -51,11 +51,11 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required: [user_id, email, password]
+              required: [username, email, password]
               properties:
-                user_id:
+                username:
                   type: string
-                  description: Unique user identifier
+                  description: Unique mutable login handle
                 nickname:
                   type: string
                   description: Display name
@@ -94,10 +94,14 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required: [user_id, password]
+              required: [identifier, password]
               properties:
-                user_id:
+                identifier:
                   type: string
+                  description: username or email (login handle)
+                username:
+                  type: string
+                  description: Alias for identifier (kept for backward compat)
                 password:
                   type: string
                   format: password
@@ -179,10 +183,12 @@ paths:
           application/x-www-form-urlencoded:
             schema:
               type: object
-              required: [user_id]
+              required: [id]
               properties:
-                user_id:
+                id:
                   type: string
+                  format: uuid
+                  description: users.id UUID (also accepts user_id as alias)
       responses:
         '200':
           description: Organizer status
@@ -223,10 +229,6 @@ paths:
                 first_name:
                   type: string
                 last_name:
-                  type: string
-                no_ic:
-                  type: string
-                no_matrik:
                   type: string
                 no_phone:
                   type: string
@@ -320,7 +322,8 @@ paths:
                 title:
                   type: string
                 place_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 fee:
                   type: integer
                   default: 0
@@ -333,7 +336,8 @@ paths:
                 description:
                   type: string
                 business_profile_id:
-                  type: integer
+                  type: string
+                  format: uuid
                   default: 0
       responses:
         '200':
@@ -350,7 +354,8 @@ paths:
         - name: place_id
           in: query
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
           description: List of events
@@ -367,7 +372,8 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
           description: Event details
@@ -388,13 +394,15 @@ paths:
               required: [event_id]
               properties:
                 event_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 category:
                   type: string
                 title:
                   type: string
                 place_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 fee:
                   type: integer
                 start_date:
@@ -425,7 +433,8 @@ paths:
               required: [event_id]
               properties:
                 event_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Event deleted
@@ -457,7 +466,8 @@ paths:
               required: [event_id]
               properties:
                 event_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Joined event
@@ -474,7 +484,8 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
           description: Participant count
@@ -495,7 +506,8 @@ paths:
               required: [event_id]
               properties:
                 event_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Like toggled
@@ -535,7 +547,8 @@ paths:
                 coordinate:
                   type: string
                 business_profile_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Place created
@@ -569,7 +582,8 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
           description: Place details
@@ -590,7 +604,8 @@ paths:
               required: [place_id]
               properties:
                 place_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 name:
                   type: string
                 description:
@@ -619,7 +634,8 @@ paths:
               required: [place_id]
               properties:
                 place_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Place deleted
@@ -685,7 +701,8 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
           description: Activity details
@@ -706,7 +723,8 @@ paths:
               required: [activity_id]
               properties:
                 activity_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Activity deleted
@@ -728,11 +746,13 @@ paths:
                 caption:
                   type: string
                 place_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 event_id:
                   type: string
                 activity_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Post created
@@ -748,11 +768,13 @@ paths:
         - name: place_id
           in: query
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: activity_id
           in: query
           schema:
-            type: integer
+            type: string
+            format: uuid
         - name: f_user_id
           in: query
           schema:
@@ -787,7 +809,8 @@ paths:
               required: [post_id]
               properties:
                 post_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Like toggled
@@ -808,7 +831,8 @@ paths:
               required: [post_id, comment]
               properties:
                 post_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 comment:
                   type: string
       responses:
@@ -827,7 +851,8 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
           description: Comment list
@@ -859,7 +884,8 @@ paths:
               required: [post_id]
               properties:
                 post_id:
-                  type: integer
+                  type: string
+                  format: uuid
       responses:
         '200':
           description: Post deleted
@@ -914,7 +940,9 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
+            description: business_profile.id UUID
       responses:
         '200':
           description: Business details
@@ -935,7 +963,8 @@ paths:
               required: [business_profile_id]
               properties:
                 business_profile_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 company_name:
                   type: string
                 reg_no:
@@ -997,7 +1026,8 @@ paths:
                 user_id_2:
                   type: string
                 room_id:
-                  type: integer
+                  type: string
+                  format: uuid
                 message:
                   type: string
       responses:
@@ -1027,7 +1057,8 @@ paths:
           in: query
           required: true
           schema:
-            type: integer
+            type: string
+            format: uuid
       responses:
         '200':
           description: Message list
@@ -1195,7 +1226,14 @@ components:
             data:
               type: object
               properties:
+                id:
+                  type: string
+                  format: uuid
+                  description: users.id UUID (JWT sub)
                 user_id:
+                  type: string
+                  description: Alias of id (backward compat)
+                username:
                   type: string
                 nickname:
                   type: string
@@ -1276,7 +1314,8 @@ components:
                 type: object
                 properties:
                   id:
-                    type: integer
+                    type: string
+                    description: Entity or user UUID (places, events, activities, users are all UUID)
                   title:
                     type: string
                   description:

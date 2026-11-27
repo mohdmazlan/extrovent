@@ -9,7 +9,7 @@ import styles from './AuthPage.module.scss';
 export default function LoginPage() {
   const { login, error } = useAuth();
   const navigate = useNavigate();
-  const [userId, setUserId] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -18,10 +18,10 @@ export default function LoginPage() {
     if (busy) return;
     setBusy(true);
     try {
-      await login(userId.trim(), password);
+      await login(identifier, password);
       navigate('/', { replace: true });
     } catch {
-      // Error message is already exposed via AuthContext.
+      // Error message already via AuthContext; 429 retry_after surfaced via ApiError
     } finally {
       setBusy(false);
     }
@@ -37,7 +37,7 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={onSubmit} className={styles.form}>
-          <Input label="User ID" value={userId} onChange={(e) => setUserId(e.target.value)} placeholder="your_user_id" required autoComplete="username" />
+          <Input label="Email or username" value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="you@example.com or username" required autoComplete="username" />
           <Input
             label="Password"
             type="password"

@@ -7,24 +7,40 @@ use Extrovent\Exceptions\BusinessLogicException;
 
 /**
  * Post service - handles post business logic.
+ * 1-go schema: users.id CHAR(36) UUID PK, all user_id FKs CHAR(36).
  */
 class PostService
 {
     public function __construct(private Database $db) {}
 
+    private function genId(): string
+    {
+        $b = random_bytes(16);
+        $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
+        $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
+        $h = bin2hex($b);
+        return sprintf('%s-%s-%s-%s-%s', substr($h,0,8), substr($h,8,4), substr($h,12,4), substr($h,16,4), substr($h,20,12));
+    }
+
     /**
      * Create a new post.
      */
-    public function create(string $userId, array $data): int
+    public function create(string $userId, array $data): string
     {
-        return $this->db->insert('posts', [
+        $now = date('Y-m-d H:i:s');
+        $id = $this->genId();
+        $this->db->insert('posts', [
+            'post_id' => $id,
             'caption' => trim($data['caption'] ?? ''),
             'banner' => '',
             'user_id' => $userId,
-            'place_id' => isset($data['place_id']) ? (int) $data['place_id'] : null,
+            'place_id' => isset($data['place_id']) && $data['place_id'] !== '' ? trim((string) $data['place_id']) : null,
             'event_id' => isset($data['event_id']) ? (string) $data['event_id'] : null,
-            'activity_id' => isset($data['activity_id']) ? (int) $data['activity_id'] : null,
+            'activity_id' => isset($data['activity_id']) && $data['activity_id'] !== '' ? trim((string) $data['activity_id']) : null,
+            'create_date' => $now,
+            'last_update' => $now,
         ]);
+        return $id;
     }
 
     /**
@@ -38,12 +54,12 @@ class PostService
         $sql = "SELECT
                     (SELECT COUNT(*) FROM post_comment WHERE post_id = p.post_id) AS total_comment,
                     (SELECT COUNT(*) FROM post_like WHERE post_id = p.post_id) AS total_likes,
-                    p.post_id, p.banner, NOW() AS timeNow, p.date_cr8 AS date,
+                    p.post_id, p.banner, NOW() AS timeNow, p.create_date AS date,
                     p.caption, p.type, pl.user_id AS sliked,
-                    u.nickname, u.avatar, u.user_id
+                    u.id, u.username, u.nickname, u.avatar
                 FROM posts p
                 LEFT JOIN post_like pl ON p.post_id = pl.post_id AND pl.user_id = ?
-                LEFT JOIN users u ON u.user_id = p.user_id
+                LEFT JOIN users u ON u.id = p.user_id
                 WHERE 1=1";
 
         $params = [$userId];
@@ -87,8 +103,8 @@ class PostService
         return $this->db->fetchAll(
             "SELECT p.*, (SELECT COUNT(*) FROM post_comment WHERE post_id = p.post_id) AS total_comment,
                      (SELECT COUNT(*) FROM post_like WHERE post_id = p.post_id) AS total_likes
-              FROM posts p 
-              WHERE p.user_id = ? 
+              FROM posts p
+              WHERE p.user_id = ?
               ORDER BY p.last_update DESC",
             [$userId]
         );
@@ -97,7 +113,7 @@ class PostService
     /**
      * Like/unlike a post.
      */
-    public function likePost(int $postId, string $userId): array
+    public function likePost(string $postId, string $userId): array
     {
         $existing = $this->db->fetchOne(
             "SELECT id FROM post_like WHERE post_id = ? AND user_id = ?",
@@ -126,7 +142,7 @@ class PostService
     /**
      * Comment on a post.
      */
-    public function comment(int $postId, string $userId, array $data): array
+    public function comment(string $postId, string $userId, array $data): array
     {
         $comment = trim($data['comment'] ?? '');
         if (empty($comment)) {
@@ -150,13 +166,13 @@ class PostService
     /**
      * Get comments for a post.
      */
-    public function getComments(int $postId): array
+    public function getComments(string $postId): array
     {
         return $this->db->fetchAll(
-            "SELECT c.*, u.nickname, u.avatar 
-             FROM post_comment c 
-             JOIN users u ON c.user_id = u.user_id 
-             WHERE c.post_id = ? 
+            "SELECT c.*, u.nickname, u.username, u.avatar
+             FROM post_comment c
+             JOIN users u ON c.user_id = u.id
+             WHERE c.post_id = ?
              ORDER BY c.datetime ASC",
             [$postId]
         );
@@ -165,7 +181,7 @@ class PostService
     /**
      * Delete post.
      */
-    public function delete(int $postId, string $userId): array
+    public function delete(string $postId, string $userId): array
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
@@ -188,7 +204,7 @@ class PostService
     /**
      * Get post images.
      */
-    public function getImages(int $postId): array
+    public function getImages(string $postId): array
     {
         return array_map(fn($img) => $img['image_url'], $this->db->fetchAll(
             "SELECT image_url FROM post_image WHERE post_id = ?",
@@ -199,7 +215,7 @@ class PostService
     /**
      * Get banner from first image if no banner set.
      */
-    public function getBanner(int $postId): ?string
+    public function getBanner(string $postId): ?string
     {
         $post = $this->db->fetchOne(
             "SELECT banner FROM posts WHERE post_id = ?",

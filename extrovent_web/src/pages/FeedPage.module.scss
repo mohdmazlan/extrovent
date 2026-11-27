@@ -32,6 +32,7 @@
 
 .postCard {
   @include card(elevated);
+  padding: $space-6;
   overflow: hidden;
   @include fade-in;
 
@@ -40,152 +41,13 @@
   }
 }
 
-.postHeader {
-  display: flex;
-  align-items: center;
-  gap: $space-3;
-  padding: $space-4 $space-6;
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: $radius-full;
-  @include forest-gradient;
-  display: grid;
-  place-items: center;
-  color: white;
-  font-weight: $fw-bold;
-  font-size: $fs-sm;
-  flex-shrink: 0;
-}
-
-.author {
-  font-weight: $fw-semibold;
-  color: var(--text-h);
-  font-size: $fs-sm;
-}
-
-.date {
-  font-size: $fs-xs;
-  color: var(--text-muted);
-}
-
-.postBody {
-  padding: $space-5 $space-6;
-
-  p {
-    line-height: $lh-relaxed;
-    color: var(--text);
-  }
-}
-
-.actions {
-  display: flex;
-  gap: $space-3;
-  padding: $space-3 $space-6;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-subtle);
-}
-
-.actionBtn {
-  display: inline-flex;
-  align-items: center;
-  gap: $space-2;
-  padding: $space-2 $space-4;
-  border-radius: $radius-full;
-  font-size: $fs-sm;
-  font-weight: $fw-medium;
-  border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--text);
-  cursor: pointer;
-  transition: all $duration-fast $ease-default;
-
-  &:hover {
-    background: var(--bg-elevated);
-    border-color: var(--border-strong);
-    transform: translateY(-1px);
-    box-shadow: $shadow-sm;
-  }
-
-  &.liked {
-    background: rgba(231, 111, 81, 0.12);
-    border-color: rgba(231, 111, 81, 0.25);
-    color: $color-amber-600;
-
-    &:hover {
-      background: rgba(231, 111, 81, 0.18);
-    }
-  }
-}
-
-.comments {
-  padding: $space-4 $space-6;
-  background: var(--bg-subtle);
-  border-top: 1px solid var(--border-subtle);
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 $space-4;
-    display: grid;
-    gap: $space-3;
-  }
-
-  li {
-    background: var(--bg-elevated);
-    border: 1px solid var(--border-subtle);
-    border-radius: $radius-md;
-    padding: $space-3 $space-4;
-    font-size: $fs-sm;
-    line-height: $lh-normal;
-
-    strong {
-      color: var(--text-h);
-      font-weight: $fw-semibold;
-    }
-  }
-}
-
-.commentForm {
-  display: flex;
-  gap: $space-3;
-
-  input {
-    flex: 1;
-    padding: $space-3 $space-4;
-    border: 1px solid var(--border);
-    border-radius: $radius-full;
-    font-size: $fs-sm;
-    background: var(--bg-elevated);
-    outline: none;
-    transition: border-color $duration-fast $ease-default, box-shadow $duration-fast $ease-default;
-
-    &:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px var(--accent-soft);
-    }
-  }
+// Spacer between skeleton lines (was an inline `style={{ height: '12px' }}`)
+.skeletonSpacer {
+  height: $space-3;
 }
 
 .loadMore {
   display: flex;
   justify-content: center;
   margin-top: $space-6;
-}
-
-.breadcrumb {
-  font-size: $fs-sm;
-  color: var(--text-muted);
-  margin-bottom: $space-4;
-  display: inline-flex;
-  align-items: center;
-  gap: $space-2;
-  text-decoration: none;
-
-  &:hover {
-    color: var(--accent);
-  }
 }

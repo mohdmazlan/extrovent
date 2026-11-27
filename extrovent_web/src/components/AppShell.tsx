@@ -1,71 +1,48 @@
-import { useState } from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../auth/AuthContext';
+import { listNotifications, getUnreadCount } from '../lib/notifications';
+import Sidebar from './Sidebar';
+import BottomNav from './BottomNav';
+import HeaderMenu from './HeaderMenu';
 import '../styles/layout/_shell.scss';
 
-const NAV_ITEMS = [
-  { to: '/feed', label: 'Feed' },
-  { to: '/events', label: 'Events' },
-  { to: '/places', label: 'Places' },
-  { to: '/search', label: 'Search' },
-  { to: '/profile', label: 'Profile' },
-];
-
 export default function AppShell({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
-  const [open, setOpen] = useState(false);
-
-  // Close mobile nav on navigation
-  const close = () => setOpen(false);
-
-  const initial = (user?.nickname || user?.user_id || '?')[0]?.toUpperCase();
+  const { user } = useAuth();
+  const [notifCount, setNotifCount] = useState(0);
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    const fetchCount = async () => {
+      try { const items = await listNotifications(); if (alive) setNotifCount(getUnreadCount(items)); } catch {}
+    };
+    void fetchCount();
+    const id = window.setInterval(fetchCount, 15000);
+    return () => { alive = false; window.clearInterval(id); };
+  }, [user]);
 
   return (
     <div className="app-shell">
       <header className="app-header">
         <div className="app-header__inner">
-          <Link to="/" className="app-header__brand" onClick={close}>
+          <Link to="/" className="app-header__brand">
             <span className="app-header__logo">⛰</span>
             Extrovent
           </Link>
 
-          <nav className={`app-header__nav ${open ? 'is-open' : ''}`} aria-label="Main">
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={close}
-                className={({ isActive }) => `app-header__link ${isActive ? 'is-active' : ''}`}
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
-
           <div className="app-header__actions">
-            {user && (
-              <div className="app-header__user">
-                <span>{user.nickname || user.user_id}</span>
-                <span className="app-header__avatar">{initial}</span>
-              </div>
-            )}
-            <button type="button" onClick={() => void logout()} className="app-header__link" style={{ border: 'none', background: 'var(--bg-subtle)', cursor: 'pointer' }}>
-              Logout
-            </button>
-            <button
-              type="button"
-              className="app-header__burger"
-              aria-label={open ? 'Close menu' : 'Open menu'}
-              aria-expanded={open}
-              onClick={() => setOpen((v) => !v)}
-            >
-              {open ? '✕' : '☰'}
-            </button>
+            <Link to="/search" className="app-header__search" aria-label="Search">⌕</Link>
+            <HeaderMenu />
           </div>
         </div>
       </header>
 
-      <main className="app-main">{children}</main>
+      <div className="app-shell__body">
+        <Sidebar notifCount={notifCount} />
+        <main className="app-main">{children}</main>
+      </div>
+
+      <BottomNav notifCount={notifCount} />
 
       <footer className="app-footer">
         <span>© {new Date().getFullYear()} Extrovent — Explore outdoors, together.</span>

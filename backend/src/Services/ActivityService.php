@@ -13,10 +13,32 @@ class ActivityService
 {
     public function __construct(private Database $db) {}
 
+    private function genId(): string
+    {
+        $b = random_bytes(16);
+        $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
+        $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
+        $h = bin2hex($b);
+        return sprintf('%s-%s-%s-%s-%s', substr($h,0,8), substr($h,8,4), substr($h,12,4), substr($h,16,4), substr($h,20,12));
+    }
+
+    private function parseCoordinate(mixed $raw): ?array
+    {
+        if ($raw === null || $raw === '') return null;
+        if (!is_string($raw) || !preg_match('/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/', $raw, $m)) {
+            throw new ValidationException('Invalid coordinate format, expected "lat,lng"');
+        }
+        $lat = (float) $m[1]; $lng = (float) $m[2];
+        if ($lat < -90 || $lat > 90 || $lng < -180 || $lng > 180) {
+            throw new ValidationException('Coordinate out of range');
+        }
+        return [$lat, $lng];
+    }
+
     /**
      * Create a new activity.
      */
-    public function create(string $userId, array $data): int
+    public function create(string $userId, array $data): string
     {
         // Validate required fields
         $missing = [];
@@ -30,13 +52,19 @@ class ActivityService
             throw new ValidationException("Missing required fields: " . implode(', ', $missing));
         }
 
-        return $this->db->insert('activity', [
-            'category_Activity' => trim($data['category_Activity']),
-            'name' => trim($data['name']),
-            'description' => trim($data['description']),
-            'coordinate' => $data['coordinate'] ?? '',
-            'user_id' => $userId,
-        ]);
+        $coords = $this->parseCoordinate($data['coordinate'] ?? null);
+        $now = date('Y-m-d H:i:s');
+        if ($coords === null) {
+            // Coordinate is NOT NULL (POINT) — default to 0,0 if not provided so insert doesn't 1364/1366
+            $coords = [0.0, 0.0];
+        }
+        $id = $this->genId();
+        $stmt = $this->db->query(
+            "INSERT INTO activity (id, category_Activity, name, description, coordinate, create_date, last_update, user_id)
+             VALUES (?, ?, ?, ?, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')')), ?, ?, ?)",
+            [$id, trim($data['category_Activity']), trim($data['name']), trim($data['description']), $coords[0], $coords[1], $now, $now, $userId]
+        );
+        return $id;
     }
 
     /**
@@ -46,7 +74,7 @@ class ActivityService
     {
         return $this->db->fetchAll(
             "SELECT a.*, u.nickname FROM activity a 
-             LEFT JOIN users u ON a.user_id = u.user_id 
+             LEFT JOIN users u ON a.user_id = u.id 
              ORDER BY a.create_date DESC"
         );
     }
@@ -54,27 +82,30 @@ class ActivityService
     /**
      * Get activity by ID.
      */
-    public function getById(int $activityId): ?array
+    public function getById(string $activityId): array
     {
-        return $this->db->fetchOne(
+        $row = $this->db->fetchOne(
             "SELECT a.*, u.nickname FROM activity a 
-             LEFT JOIN users u ON a.user_id = u.user_id 
+             LEFT JOIN users u ON a.user_id = u.id 
              WHERE a.id = ?",
             [$activityId]
         );
+        if (!$row) {
+            throw new \Extrovent\Exceptions\NotFoundException('Activity not found');
+        }
+        return $row;
     }
 
     /**
      * Delete activity.
      */
-    public function delete(int $activityId, string $userId): array
+    public function delete(string $activityId, string $userId): array
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
             "SELECT user_id FROM activity WHERE id = ?",
             [$activityId]
         );
-
         if ($owner !== $userId) {
             throw new BusinessLogicException('You do not own this activity');
         }
@@ -89,7 +120,7 @@ class ActivityService
     /**
      * Get activity images.
      */
-    public function getImages(int $activityId): array
+    public function getImages(string $activityId): array
     {
         return array_map(fn($img) => $img['image_url'], $this->db->fetchAll(
             "SELECT image_url FROM activity_image WHERE activity_id = ?",

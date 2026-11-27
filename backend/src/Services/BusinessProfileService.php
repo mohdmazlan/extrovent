@@ -13,10 +13,19 @@ class BusinessProfileService
 {
     public function __construct(private Database $db) {}
 
+    private function genId(): string
+    {
+        $b = random_bytes(16);
+        $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
+        $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
+        $h = bin2hex($b);
+        return sprintf('%s-%s-%s-%s-%s', substr($h,0,8), substr($h,8,4), substr($h,12,4), substr($h,16,4), substr($h,20,12));
+    }
+
     /**
      * Register a new business profile.
      */
-    public function create(string $userId, array $data): int
+    public function create(string $userId, array $data): string
     {
         // Validate required fields
         $missing = [];
@@ -30,13 +39,18 @@ class BusinessProfileService
             throw new ValidationException("Missing required fields: " . implode(', ', $missing));
         }
 
-        return $this->db->insert('business_profile', [
+        $id = $this->genId();
+        $insert = [
+            'id' => $id,
             'avatar' => $data['avatar'] ?? '',
             'company_name' => trim($data['company_name']),
             'reg_no' => trim($data['reg_no']),
             'description' => trim($data['description']),
             'user_id' => $userId,
-        ]);
+            'create_date' => date('Y-m-d H:i:s'),
+        ];
+        $this->db->insert('business_profile', $insert);
+        return $id;
     }
 
     /**
@@ -52,7 +66,7 @@ class BusinessProfileService
     /**
      * Get business profile by ID.
      */
-    public function getById(int $profileId): ?array
+    public function getById(string $profileId): ?array
     {
         return $this->db->fetchOne(
             "SELECT * FROM business_profile WHERE id = ?",
@@ -63,14 +77,13 @@ class BusinessProfileService
     /**
      * Update business profile.
      */
-    public function update(int $profileId, string $userId, array $data): array
+    public function update(string $profileId, string $userId, array $data): array
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
             "SELECT user_id FROM business_profile WHERE id = ?",
             [$profileId]
         );
-
         if ($owner !== $userId) {
             throw new BusinessLogicException('You do not own this business profile');
         }
@@ -111,14 +124,13 @@ class BusinessProfileService
     /**
      * Update banner image.
      */
-    public function updateBanner(int $profileId, string $userId, array $data): array
+    public function updateBanner(string $profileId, string $userId, array $data): array
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
             "SELECT user_id FROM business_profile WHERE id = ?",
             [$profileId]
         );
-
         if ($owner !== $userId) {
             throw new BusinessLogicException('You do not own this business profile');
         }
@@ -132,14 +144,13 @@ class BusinessProfileService
     /**
      * Update profile picture.
      */
-    public function updateProfilePic(int $profileId, string $userId, array $data): array
+    public function updateProfilePic(string $profileId, string $userId, array $data): array
     {
         // Verify ownership
         $owner = $this->db->fetchColumn(
             "SELECT user_id FROM business_profile WHERE id = ?",
             [$profileId]
         );
-
         if ($owner !== $userId) {
             throw new BusinessLogicException('You do not own this business profile');
         }

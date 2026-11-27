@@ -14,7 +14,8 @@ interface SearchItem {
   title?: string;
   nickname?: string | null;
   user_id?: string;
-  id?: number;
+  username?: string;
+  id?: number | string;
   type: string;
 }
 
@@ -87,14 +88,42 @@ export default function SearchPage() {
                   <div className={styles.empty}>No {label.toLowerCase()} found.</div>
                 ) : (
                   <ul>
-                    {items.map((it, i) => (
-                      <li key={`${label}-${it.id ?? it.user_id ?? i}`}>
-                        <span>
-                          {it.nickname ? `${it.nickname} (${it.user_id})` : it.title}
-                        </span>
-                        <Badge variant="stone">{it.type}</Badge>
-                      </li>
-                    ))}
+                    {items.map((it, i) => {
+                      const handle = it.username ?? it.user_id;
+                      const content = (
+                        <>
+                          <span>{it.nickname ? `${it.nickname} (${handle})` : it.title}</span>
+                          <Badge variant="stone">{it.type}</Badge>
+                        </>
+                      );
+                      if (key === 'users' && handle) {
+                        return (
+                          <li key={`${label}-${it.id ?? handle ?? i}`}>
+                            <Link
+                              to={`/users/${encodeURIComponent(handle)}`}
+                              className={styles.resultLink}
+                            >
+                              {content}
+                            </Link>
+                          </li>
+                        );
+                      }
+                      if (key === 'activities' && it.id) {
+                        return (
+                          <li key={`${label}-${it.id ?? it.user_id ?? i}`}>
+                            <Link
+                              to={`/activities/${it.id}`}
+                              className={styles.resultLink}
+                            >
+                              {content}
+                            </Link>
+                          </li>
+                        );
+                      }
+                      return (
+                        <li key={`${label}-${it.id ?? it.user_id ?? i}`}>{content}</li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

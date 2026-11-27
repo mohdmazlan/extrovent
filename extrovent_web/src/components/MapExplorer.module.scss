@@ -1,0 +1,92 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+.chipBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.chip {
+  padding: $space-2 $space-4;
+  border-radius: $radius-full;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: $fs-sm;
+  font-weight: $fw-medium;
+  cursor: pointer;
+  transition: all $duration-fast $ease-default;
+
+  &:hover {
+    border-color: var(--border-strong);
+    color: var(--text-h);
+  }
+
+  &.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
+    font-weight: $fw-semibold;
+  }
+}
+
+.mapFrame {
+  position: relative;
+  border-radius: $radius-xl;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  box-shadow: $shadow-md;
+  height: 420px;
+
+  :global(.leaflet-container) {
+    height: 100%;
+    width: 100%;
+  }
+}
+
+.loadingOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 500;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(2px);
+
+  @media (prefers-color-scheme: dark) {
+    background: rgba(17, 18, 16, 0.5);
+  }
+}
+
+.skeletonBox {
+  width: 90%;
+  height: 90%;
+  border-radius: $radius-lg;
+}
+
+.error {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+}
+
+.emptyWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 400;
+  display: grid;
+  place-items: center;
+  background: var(--bg-elevated);
+  padding: $space-6;
+}

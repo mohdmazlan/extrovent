@@ -1,0 +1,151 @@
+@use '../styles/abstracts/variables' as *;
+@use '../styles/abstracts/mixins' as *;
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  font-size: $fs-sm;
+  color: var(--text-muted);
+  text-decoration: none;
+  margin-bottom: $space-4;
+  &:hover { color: var(--accent); }
+}
+
+.card {
+  @include card(elevated);
+  overflow: hidden;
+  @include fade-in;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-5 $space-6;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: $radius-full;
+  @include extrovent-gradient;
+  display: grid;
+  place-items: center;
+  color: white;
+  font-weight: $fw-bold;
+  font-size: $fs-sm;
+}
+
+.author {
+  font-weight: $fw-semibold;
+  color: var(--text-h);
+  font-size: $fs-sm;
+}
+
+.sub {
+  font-size: $fs-xs;
+  color: var(--text-muted);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+  padding: $space-3 $space-6 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: $radius-full;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  font-size: $fs-xs;
+  color: var(--text);
+}
+
+.form {
+  padding: $space-6;
+  display: grid;
+  gap: $space-4;
+}
+
+.uploadRow {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  flex-wrap: wrap;
+}
+
+.fileLabel {
+  cursor: pointer;
+}
+
+.fileBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: $radius-full;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  font-size: $fs-sm;
+  font-weight: $fw-medium;
+  transition: all 150ms;
+  &:hover {
+    border-color: var(--border-strong);
+    box-shadow: $shadow-sm;
+  }
+}
+
+.hint {
+  font-size: $fs-xs;
+  color: var(--text-muted);
+}
+
+.previewWrap {
+  display: grid;
+  gap: $space-3;
+}
+
+.fileList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: $space-2;
+}
+
+.fileTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border-radius: $radius-full;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  font-size: $fs-xs;
+  button {
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    color: var(--text-muted);
+    &:hover { color: var(--danger); }
+  }
+}
+
+.alert {
+  background: rgba(192, 57, 43, 0.08);
+  border: 1px solid rgba(192, 57, 43, 0.2);
+  color: var(--danger);
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $fs-sm;
+}

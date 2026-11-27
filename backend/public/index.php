@@ -189,6 +189,7 @@ function dispatch(string $method, string $path, RequestParser $request, Response
 
     if (!isset($routes[$path])) {
         $response->error('Endpoint not found', 404);
+        $response->send();
         return;
     }
 
@@ -248,7 +249,7 @@ function dispatch(string $method, string $path, RequestParser $request, Response
     try {
         $service = $container->resolve($serviceClass);
     } catch (\InvalidArgumentException $e) {
-        $response->error('Service not found: ' . $e->getMessage(), 500);
+        $response->error((defined('APP_DEBUG') && APP_DEBUG) ? 'Service not found: ' . $e->getMessage() : 'Service unavailable', 500);
         return;
     }
 
@@ -383,6 +384,7 @@ function serveMedia(string $path, ResponseFormatter $response): void
 
     if (!file_exists($filePath)) {
         $response->error('File not found', 404);
+        $response->send();
         return;
     }
 
@@ -403,6 +405,7 @@ function serveUpload(string $path, ResponseFormatter $response): void
 
     if (!file_exists($filePath)) {
         $response->error('File not found', 404);
+        $response->send();
         return;
     }
 
@@ -502,7 +505,7 @@ function handleRefreshEndpoint(RequestParser $request, ResponseFormatter $respon
         $response->send();
         
     } catch (\Throwable $e) {
-        $response->error('Token refresh failed: ' . $e->getMessage(), 500);
+        $response->error((defined('APP_DEBUG') && APP_DEBUG) ? 'Token refresh failed: ' . $e->getMessage() : 'Token refresh failed', 500);
         $response->send();
     }
 }
@@ -560,7 +563,7 @@ function handleLogoutEndpoint(RequestParser $request, ResponseFormatter $respons
         $response->send();
         
     } catch (\Throwable $e) {
-        $response->error('Logout failed: ' . $e->getMessage(), 500);
+        $response->error((defined('APP_DEBUG') && APP_DEBUG) ? 'Logout failed: ' . $e->getMessage() : 'Logout failed', 500);
         $response->send();
     }
 }

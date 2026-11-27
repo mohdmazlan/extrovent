@@ -15,8 +15,6 @@ const FIELDS: Array<{ key: keyof ProfileUpdate; label: string }> = [
   { key: 'email', label: 'Email' },
   { key: 'first_name', label: 'First name' },
   { key: 'last_name', label: 'Last name' },
-  { key: 'no_ic', label: 'No. IC' },
-  { key: 'no_matrik', label: 'No. Matrik' },
   { key: 'no_phone', label: 'Phone' },
 ];
 
@@ -28,18 +26,21 @@ export default function ProfilePage() {
   const [busy, setBusy] = useState(false);
   const [initial, setInitial] = useState('?');
 
+  const [username, setUsername] = useState<string | null>(null);
   useEffect(() => {
     (async () => {
       try {
         const p = await getProfile();
-        setInitial((p.nickname || p.user_id || '?')[0].toUpperCase());
+        const uname = p.username ?? p.user_id ?? null;
+        setUsername(uname);
+        const stableId = p.id ?? p.user_id ?? '';
+        try { if (stableId) localStorage.setItem('user_id', stableId); } catch {}
+        setInitial((p.nickname || uname || p.user_id || '?')[0].toUpperCase());
         setForm({
           nickname: p.nickname ?? '',
           email: p.email ?? '',
           first_name: p.first_name ?? '',
           last_name: p.last_name ?? '',
-          no_ic: p.no_ic ?? '',
-          no_matrik: p.no_matrik ?? '',
           no_phone: p.no_phone ?? '',
         });
       } catch (e) {
@@ -65,13 +66,15 @@ export default function ProfilePage() {
         }
         await updateProfile(update);
         const refreshed = await getProfile();
+        const freshUname = refreshed.username ?? refreshed.user_id ?? null;
+        if (freshUname) setUsername(freshUname);
+        const freshInitial = refreshed.nickname || freshUname || refreshed.user_id || '?';
+        setInitial(freshInitial[0].toUpperCase());
         setForm({
           nickname: refreshed.nickname ?? '',
           email: refreshed.email ?? '',
           first_name: refreshed.first_name ?? '',
           last_name: refreshed.last_name ?? '',
-          no_ic: refreshed.no_ic ?? '',
-          no_matrik: refreshed.no_matrik ?? '',
           no_phone: refreshed.no_phone ?? '',
         });
         setSaved(true);
@@ -105,7 +108,8 @@ export default function ProfilePage() {
           <div className={styles.avatar}>{initial}</div>
           <div className={styles.headerText}>
             <h1>Profile</h1>
-            <p>Update your personal information</p>
+            {username ? <p className={styles.username}>@{username}</p> : <p>Update your personal information</p>}
+            {username && <p className={styles.subtle}>Username is your login handle</p>}
           </div>
         </div>
 

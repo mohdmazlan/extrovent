@@ -5,199 +5,162 @@ namespace Extrovent\Services;
 use Extrovent\Database\Database;
 use Extrovent\Exceptions\ValidationException;
 
-/**
- * User service - handles user business logic.
- */
 class UserService
 {
     public function __construct(private Database $db) {}
 
-    /**
-     * Register a new user.
-     */
+    private function genId(): string
+    {
+        $b = random_bytes(16);
+        $b[6] = chr((ord($b[6]) & 0x0f) | 0x40);
+        $b[8] = chr((ord($b[8]) & 0x3f) | 0x80);
+        $h = bin2hex($b);
+        return sprintf('%s-%s-%s-%s-%s', substr($h,0,8), substr($h,8,4), substr($h,12,4), substr($h,16,4), substr($h,20,12));
+    }
+
     public function signup(array $data): array
     {
-        // Validate required fields
         $missing = [];
-        foreach (['user_id', 'email', 'password'] as $field) {
-            if (empty($data[$field])) {
-                $missing[] = $field;
-            }
+        foreach (['username', 'email', 'password'] as $field) {
+            // backward compat: accept user_id as username (client alias)
+            $v = $data[$field] ?? $data['user_id'] ?? '';
+            if (empty($v)) $missing[] = $field;
         }
-
-        if ($missing) {
-            throw new ValidationException("Please fill all required fields: " . implode(', ', $missing));
-        }
-
-        $userId = trim($data['user_id']);
+        if ($missing) throw new ValidationException("Please fill all required fields: " . implode(', ', $missing));
+        $username = trim($data['username'] ?? $data['user_id'] ?? '');
         $email = strtolower(preg_replace('/\s+/', '', $data['email']));
         $password = $data['password'];
         $confirmPassword = $data['confirm_password'] ?? '';
-
-        // Validate passwords match
-        if ($password !== $confirmPassword) {
-            throw new ValidationException('Passwords did not match');
+        if ($password !== $confirmPassword) throw new ValidationException('Passwords did not match');
+        if (strlen($password) < 6) throw new ValidationException('Password length cannot be less than 6');
+        // check uniqueness on username/email
+        if ($this->db->fetchOne("SELECT id FROM users WHERE username = ? OR email = ?", [$username, $email])) {
+            throw new ValidationException('Username or email already exists');
         }
-
-        // Password length check
-        if (strlen($password) < 6) {
-            throw new ValidationException('Password length cannot be less than 6');
-        }
-
-        // Check if user_id already exists
-        if ($this->db->fetchOne(
-            "SELECT user_id FROM users WHERE user_id = ?",
-            [$userId]
-        )) {
-            throw new ValidationException('User ID already exists');
-        }
-
-        // Hash password with bcrypt
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
+        $id = $this->genId();
         try {
-            // Insert user details table first (empty record)
-            $this->db->insert('user_details', ['user_id' => $userId]);
-
-            // Insert user
             $gender = trim($data['gender'] ?? '');
-            if (!in_array(strtolower($gender), ['m', 'f'])) {
-                $gender = 'm'; // Default to 'm' if not provided or invalid
-            }
-            
+            if (!in_array(strtolower($gender), ['m', 'f'])) $gender = 'm';
             $now = date('Y-m-d H:i:s');
             $this->db->insert('users', [
-                'user_id' => $userId,
-                'nickname' => trim($data['nickname'] ?? ''),
+                'id' => $id,
+                'username' => $username,
+                'nickname' => trim($data['nickname'] ?? $username),
                 'email' => $email,
-                'password' => $hashedPassword,
+                'first_name' => trim($data['first_name'] ?? ''),
+                'last_name' => trim($data['last_name'] ?? ''),
+                'no_phone' => trim($data['no_phone'] ?? ''),
+                'avatar' => null,
                 'gender' => $gender,
                 'ip_address' => $_SERVER['REMOTE_ADDR'] ?? '',
                 'signup' => $now,
                 'lastlogin' => $now,
                 'lastseen' => $now,
             ]);
-
-            // Create user folder for uploads (legacy compatibility)
+            $this->db->insert('user_credentials', [
+                'user_id' => $id,
+                'password_hash' => $hashedPassword,
+            ]);
             $uploadDir = __DIR__ . '/../../uploads';
-            if (!is_dir($uploadDir . "/{$userId}")) {
-                mkdir($uploadDir . "/{$userId}", 0755, true);
-            }
-
-            return ['user_id' => $userId, 'success' => true];
+            if (!is_dir($uploadDir . "/{$id}")) mkdir($uploadDir . "/{$id}", 0755, true);
+            // also keep legacy user_id dir for compat
+            if (!is_dir($uploadDir . "/{$username}")) @mkdir($uploadDir . "/{$username}", 0755, true);
+            return ['id' => $id, 'user_id' => $id, 'username' => $username, 'success' => true];
         } catch (\PDOException $e) {
-            // Handle specific database errors with user-friendly messages
             $code = (int) ($e->errorInfo[1] ?? 0);
-            
-            switch ($code) {
-                case 1062: // Duplicate entry
-                    if (strpos($e->getMessage(), 'email') !== false || strpos($e->getMessage(), 'Email') !== false) {
-                        throw new \RuntimeException('Email already registered');
-                    }
-                    if (strpos($e->getMessage(), 'user_id') !== false || strpos($e->getMessage(), 'User ID') !== false) {
-                        throw new \RuntimeException('User ID already exists');
-                    }
-                    // Fallback for other duplicate errors
-                    throw new \RuntimeException('This account already exists');
-                default:
-                    // Log the actual error for debugging (not exposed to user)
-                    error_log("Registration database error: " . $e->getMessage());
-                    throw new \RuntimeException('Registration failed. Please try again later.');
+            if ($code === 1062) {
+                if (stripos($e->getMessage(), 'email') !== false) throw new \RuntimeException('Email already registered');
+                if (stripos($e->getMessage(), 'username') !== false) throw new \RuntimeException('Username already exists');
+                throw new \RuntimeException('This account already exists');
             }
+            error_log("Registration database error: " . $e->getMessage());
+            throw new \RuntimeException('Registration failed. Please try again later.');
         } catch (\Exception $e) {
             throw new \RuntimeException('Registration failed. Please try again later.');
         }
     }
 
-    /**
-     * Get user profile.
-     */
     public function getProfile(string $userId): ?array
     {
-        return $this->db->fetchOne(
-            "SELECT u.nickname, u.avatar, u.email, ud.* 
-             FROM users u
-             LEFT JOIN user_details ud ON u.user_id = ud.user_id
-             WHERE u.user_id = ?",
-            [$userId]
-        );
+        // Single-table lookup by id, username, or email (schema.sql is the single source)
+        $row = $this->db->fetchOne("SELECT * FROM users WHERE id = ?", [$userId]);
+        if (!$row) $row = $this->db->fetchOne("SELECT * FROM users WHERE username = ?", [$userId]);
+        if (!$row) $row = $this->db->fetchOne("SELECT * FROM users WHERE email = ?", [$userId]);
+        return $row;
     }
 
-    /**
-     * Update user profile.
-     */
+    public function viewUser(array $data): array
+    {
+        $targetId = trim($data['user_id'] ?? $data['id'] ?? $data['username'] ?? '');
+        if ($targetId === '') throw new ValidationException('Missing user_id');
+        // Try id, username, email
+        $row = $this->db->fetchOne(
+            "SELECT u.id, u.username, u.nickname, u.email, u.avatar, u.gender, u.signup, u.lastlogin, u.first_name, u.last_name, u.no_phone,
+                    (SELECT COUNT(*) FROM posts WHERE user_id = u.id) AS total_posts,
+                    (SELECT COUNT(*) FROM friends WHERE (user_id1 = u.id OR user_id1 = u.username OR user_id2 = u.id OR user_id2 = u.username) AND approved = '1') AS total_friends
+             FROM users u WHERE u.id = ? OR u.username = ? OR u.email = ? LIMIT 1",
+            [$targetId, $targetId, $targetId]
+        );
+        // Legacy fallback removed — schema.sql has no user_id column or user_details table
+        if (!$row) throw new \Extrovent\Exceptions\NotFoundException('User not found');
+        // Normalize fields for frontend
+        $row['user_id'] = $row['id'] ?? $row['user_id'] ?? $targetId;
+        return $row;
+    }
+
     public function updateProfile(string $userId, array $data): array
     {
-        $allowed = ['nickname', 'email', 'first_name', 'last_name', 'no_ic', 'no_matrik', 'no_phone'];
+        $allowed = ['nickname', 'email', 'username', 'first_name', 'last_name', 'no_phone'];
         $updateData = [];
-
-        foreach ($allowed as $field) {
-            if (isset($data[$field]) && $data[$field] !== '') {
-                $updateData[$field] = trim($data[$field]);
-            }
+        foreach ($allowed as $f) if (isset($data[$f]) && $data[$f] !== '') $updateData[$f] = trim($data[$f]);
+        if (empty($updateData)) throw new ValidationException('No valid fields to update');
+        // Resolve UUID id from username if needed
+        $id = $userId;
+        $exists = $this->db->fetchOne("SELECT id FROM users WHERE id = ?", [$userId]);
+        if (!$exists) {
+            $byUsername = $this->db->fetchOne("SELECT id FROM users WHERE username = ?", [$userId]);
+            if ($byUsername) $id = $byUsername['id'];
         }
-
-        if (empty($updateData)) {
-            throw new ValidationException('No valid fields to update');
-        }
-
-        $affected = $this->db->update('users', $updateData, 'user_id = ?', [$userId]);
-
-        if (!$affected) {
-            throw new \RuntimeException('Update failed');
-        }
-
+        $affected = $this->db->update('users', $updateData, 'id = ?', [$id]);
+        if (!$affected) throw new \RuntimeException('Update failed');
         return ['success' => true];
     }
 
-    /**
-     * Update user avatar.
-     */
     public function updateAvatar(string $userId, array $data): array
     {
         $avatarUrl = $data['avatar'] ?? '';
-        if (empty($avatarUrl)) {
-            throw new ValidationException('Avatar URL is required');
+        if (empty($avatarUrl)) throw new ValidationException('Avatar URL is required');
+        $id = $userId;
+        $exists = $this->db->fetchOne("SELECT id FROM users WHERE id = ?", [$userId]);
+        if (!$exists) {
+            $byUsername = $this->db->fetchOne("SELECT id FROM users WHERE username = ?", [$userId]);
+            if ($byUsername) $id = $byUsername['id'];
         }
-
-        $this->db->update('users', ['avatar' => $avatarUrl], 'user_id = ?', [$userId]);
+        $this->db->update('users', ['avatar' => $avatarUrl], 'id = ?', [$id]);
         return ['success' => true, 'avatar' => $avatarUrl];
     }
 
-    /**
-     * Search users.
-     */
     public function searchUsers(string $query, int $limit = 20): array
     {
         $search = '%' . str_replace(['%', '_'], ['\\%', '\\_'], $query) . '%';
         return $this->db->fetchAll(
-            "SELECT user_id, nickname, avatar FROM users 
-             WHERE nickname LIKE ? OR email LIKE ? LIMIT ?",
-            [$search, $search, $limit]
+            "SELECT id, username, nickname, avatar, email FROM users WHERE nickname LIKE ? OR username LIKE ? OR email LIKE ? LIMIT ?",
+            [$search, $search, $search, $limit]
         );
     }
 
-    /**
-     * Get all users.
-     */
     public function getAllUsers(): array
     {
-        return $this->db->fetchAll(
-            "SELECT user_id, nickname, avatar FROM users ORDER BY signup DESC"
-        );
+        return $this->db->fetchAll("SELECT id, username, nickname, avatar, email FROM users ORDER BY signup DESC");
     }
 
-    /**
-     * Get user contacts (friends).
-     */
     public function getContacts(string $userId): array
     {
+        // Support both new UUID and old username FKs in friends
         return $this->db->fetchAll(
-            "SELECT u.user_id, u.nickname, u.avatar 
-             FROM friends f
-             JOIN users u ON (f.user_id1 = ? AND f.user_id2 = u.user_id) OR (f.user_id2 = ? AND f.user_id1 = u.user_id)
-             WHERE f.approved = 1",
-            [$userId, $userId]
+            "SELECT u.id, u.username, u.nickname, u.avatar FROM friends f JOIN users u ON (f.user_id1 = ? AND f.user_id2 = u.id) OR (f.user_id2 = ? AND f.user_id1 = u.id) OR (f.user_id1 = u.username) OR (f.user_id2 = u.username) WHERE f.approved = '1'",
+            [$userId, $userId, $userId, $userId]
         );
     }
 }
