@@ -4,6 +4,7 @@ namespace Extrovent\Services;
 
 use Extrovent\Database\Database;
 use Extrovent\Exceptions\BusinessLogicException;
+use Extrovent\Exceptions\ValidationException;
 
 /**
  * Post service - handles post business logic.
@@ -12,6 +13,12 @@ use Extrovent\Exceptions\BusinessLogicException;
 class PostService
 {
     public function __construct(private Database $db) {}
+
+    private const MAX_POST_IMAGES = 5;
+    private const MAX_IMAGE_BYTES = 10485760;
+    private const MAX_VIDEO_BYTES = 52428800;
+    private const IMAGE_EXTS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+    private const VIDEO_EXTS = ['mp4', 'mov', 'webm', '3gp', 'mkv', 'ogv', 'avi'];
 
     private function genId(): string
     {
@@ -25,21 +32,28 @@ class PostService
     /**
      * Create a new post.
      */
-    public function create(string $userId, array $data): string
+    public function create(string $userId, array $data, array $files = []): string
     {
         $now = date('Y-m-d H:i:s');
         $id = $this->genId();
+        $media = $this->normalizeMediaFiles($files);
+        $hasMedia = $media['images'] !== [] || $media['video'] !== null;
         $this->db->insert('posts', [
             'post_id' => $id,
-            'caption' => trim($data['caption'] ?? ''),
+            'caption' => trim((string) ($data['caption'] ?? '')),
             'banner' => '',
+            'type' => $hasMedia ? '6' : '1',
             'user_id' => $userId,
             'place_id' => isset($data['place_id']) && $data['place_id'] !== '' ? trim((string) $data['place_id']) : null,
-            'event_id' => isset($data['event_id']) ? (string) $data['event_id'] : null,
+            'event_id' => isset($data['event_id']) && $data['event_id'] !== '' ? trim((string) $data['event_id']) : null,
             'activity_id' => isset($data['activity_id']) && $data['activity_id'] !== '' ? trim((string) $data['activity_id']) : null,
             'create_date' => $now,
             'last_update' => $now,
         ]);
+        $stored = $this->storeMedia($id, $userId, $media);
+        if ($stored['images'] !== []) {
+            $this->db->update('posts', ['banner' => $stored['images'][0]], 'post_id = ?', [$id]);
+        }
         return $id;
     }
 
@@ -92,7 +106,8 @@ class PostService
         $params[] = $offset;
         $params[] = $LIMIT;
 
-        return $this->db->fetchAll($sql, array_values($params));
+        $posts = $this->db->fetchAll($sql, array_values($params));
+        return $this->withImages($posts);
     }
 
     /**
@@ -100,7 +115,7 @@ class PostService
      */
     public function getMyPosts(string $userId): array
     {
-        return $this->db->fetchAll(
+        $posts = $this->db->fetchAll(
             "SELECT p.*, (SELECT COUNT(*) FROM post_comment WHERE post_id = p.post_id) AS total_comment,
                      (SELECT COUNT(*) FROM post_like WHERE post_id = p.post_id) AS total_likes
               FROM posts p
@@ -108,6 +123,7 @@ class PostService
               ORDER BY p.last_update DESC",
             [$userId]
         );
+        return $this->withImages($posts);
     }
 
     /**
@@ -229,5 +245,119 @@ class PostService
         // Get first image as banner
         $images = $this->getImages($postId);
         return $images[0] ?? null;
+    }
+
+    /**
+     * Attach image_url lists to post rows for feed rendering.
+     */
+    private function withImages(array $posts): array
+    {
+        foreach ($posts as &$p) {
+            $pid = $p['post_id'] ?? null;
+            $p['images'] = ($pid !== null && $pid !== '') ? $this->getImages((string) $pid) : [];
+        }
+        unset($p);
+        return $posts;
+    }
+
+    /**
+     * Normalize $_FILES input into an image list plus a single optional video.
+     */
+    private function normalizeMediaFiles(array $files): array
+    {
+        $images = [];
+        if (isset($files['images']) && is_array($files['images'])) {
+            $img = $files['images'];
+            if (isset($img['name']) && is_array($img['name'])) {
+                $count = count($img['name']);
+                for ($i = 0; $i < $count; $i++) {
+                    $images[] = [
+                        'name' => $img['name'][$i] ?? '',
+                        'type' => $img['type'][$i] ?? '',
+                        'tmp_name' => $img['tmp_name'][$i] ?? '',
+                        'error' => $img['error'][$i] ?? UPLOAD_ERR_NO_FILE,
+                        'size' => $img['size'][$i] ?? 0,
+                    ];
+                }
+            } elseif (isset($img['tmp_name'])) {
+                $images[] = $img;
+            }
+        }
+        $video = null;
+        if (isset($files['video']) && is_array($files['video'])) {
+            $verr = $files['video']['error'] ?? UPLOAD_ERR_NO_FILE;
+            if ($verr !== UPLOAD_ERR_NO_FILE) {
+                $video = $files['video'];
+            }
+        }
+        return ['images' => $images, 'video' => $video];
+    }
+
+    /**
+     * Validate, move and register uploaded media. Returns stored relative urls.
+     */
+    private function storeMedia(string $postId, string $userId, array $media): array
+    {
+        $images = $media['images'] ?? [];
+        $video = $media['video'] ?? null;
+        if (count($images) > self::MAX_POST_IMAGES) {
+            throw new ValidationException('Max ' . self::MAX_POST_IMAGES . ' images allowed');
+        }
+        if ($images === [] && $video === null) {
+            return ['images' => [], 'video' => null];
+        }
+        $dir = __DIR__ . '/../../storage/' . $userId . '/feed/' . $postId;
+        if (!is_dir($dir) && !mkdir($dir, 0755, true) && !is_dir($dir)) {
+            throw new \RuntimeException('Failed to prepare upload directory');
+        }
+        $prefix = 'storage/' . $userId . '/feed/' . $postId;
+        $urls = [];
+        foreach ($images as $file) {
+            $urls[] = $this->storeOne($dir, $prefix, $file, self::IMAGE_EXTS, self::MAX_IMAGE_BYTES, 'image');
+        }
+        $videoUrl = null;
+        if ($video !== null) {
+            $videoUrl = $this->storeOne($dir, $prefix, $video, self::VIDEO_EXTS, self::MAX_VIDEO_BYTES, 'video');
+        }
+        foreach ($videoUrl !== null ? array_merge($urls, [$videoUrl]) : $urls as $url) {
+            $this->db->insert('post_image', ['post_id' => $postId, 'image_url' => $url]);
+        }
+        return ['images' => $urls, 'video' => $videoUrl];
+    }
+
+    /**
+     * Validate and move a single uploaded file. Returns its relative url.
+     */
+    private function storeOne(string $dir, string $prefix, array $file, array $exts, int $maxBytes, string $kind): string
+    {
+        $err = $file['error'] ?? UPLOAD_ERR_NO_FILE;
+        if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE) {
+            throw new ValidationException('File exceeds server upload limit');
+        }
+        if ($err !== UPLOAD_ERR_OK) {
+            throw new ValidationException('File upload failed');
+        }
+        $size = (int) ($file['size'] ?? 0);
+        if ($size <= 0 || $size > $maxBytes) {
+            throw new ValidationException($kind === 'video' ? 'Video exceeds 50MB' : 'Each image must be 10MB or less');
+        }
+        $orig = (string) ($file['name'] ?? '');
+        $ext = strtolower(pathinfo($orig, PATHINFO_EXTENSION));
+        if ($ext === '' || !in_array($ext, $exts, true)) {
+            throw new ValidationException($kind === 'video' ? 'Unsupported video format' : 'Only JPG, PNG, WebP or GIF images allowed');
+        }
+        if (class_exists('finfo')) {
+            $mime = (new \finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+            $ok = $kind === 'video' ? str_starts_with((string) $mime, 'video/') : str_starts_with((string) $mime, 'image/');
+            if (!$ok) {
+                throw new ValidationException('File content does not match its type');
+            }
+        }
+        $name = bin2hex(random_bytes(8)) . '.' . $ext;
+        $dest = $dir . '/' . $name;
+        if (!is_uploaded_file($file['tmp_name']) || !move_uploaded_file($file['tmp_name'], $dest)) {
+            throw new \RuntimeException('Failed to save uploaded file');
+        }
+        return $prefix . '/' . $name;
     }
 }

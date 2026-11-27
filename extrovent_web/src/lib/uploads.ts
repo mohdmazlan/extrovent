@@ -1,4 +1,5 @@
-import { apiFetch } from './apiClient';
+import { apiFetch, apiUpload } from './apiClient';
+import type { UploadProgress } from './apiClient';
 
 export const MAX_IMAGES = 5;
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
@@ -41,11 +42,52 @@ export function resizeImageTo500(file: File): Promise<string> {
   });
 }
 
-export async function uploadPostImages(postId: string, files: File[]): Promise<void> {
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
+export const VIDEO_EXTENSIONS = ['mp4', 'mov', 'webm', '3gp', 'mkv', 'ogv', 'avi'];
+export const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+export interface PostMediaSelection {
+  images: File[];
+  video: File | null;
+}
+
+export function validatePostMedia(images: File[], video: File | null): string | null {
+  if (images.length > MAX_IMAGES) return `Max ${MAX_IMAGES} images allowed`;
+  for (const f of images) {
+    if (f.size > MAX_IMAGE_BYTES) return `${f.name} exceeds 10MB`;
+    if (!f.type.startsWith('image/')) return `${f.name} is not an image`;
+  }
+  if (video) {
+    if (video.size > MAX_VIDEO_BYTES) return `${video.name} exceeds 50MB`;
+    const ext = video.name.split('.').pop()?.toLowerCase() ?? '';
+    if (!VIDEO_EXTENSIONS.includes(ext) && !video.type.startsWith('video/')) return `${video.name} is not a supported video`;
+  }
+  return null;
+}
+
+// Single-endpoint post create: caption + optional images[]/video in one multipart call.
+export async function createPostWithMedia(
+  payload: Record<string, unknown>,
+  media: PostMediaSelection,
+  onProgress?: (ratio: number) => void,
+): Promise<string | null> {
   const fd = new FormData();
-  fd.append('post_id', String(postId));
-  files.forEach((f) => fd.append('images[]', f));
-  await apiFetch('/post/upload', { method: 'POST', formData: fd });
+  Object.entries(payload).forEach(([k, v]) => {
+    if (v !== undefined && v !== null && v !== '') fd.append(k, String(v));
+  });
+  media.images.forEach((f) => fd.append('images[]', f));
+  if (media.video) fd.append('video', media.video);
+  const res = await apiUpload<{ post_id: string } | { id: string } | string | { success: boolean }>(
+    '/post/create',
+    fd,
+    onProgress ? (p: UploadProgress) => onProgress(p.ratio) : undefined,
+  );
+  if (typeof res === 'string') return res;
+  if (res && typeof res === 'object') {
+    const r = res as Record<string, unknown>;
+    return (r.post_id as string) ?? (r.id as string) ?? (r.postId as string) ?? null;
+  }
+  return null;
 }
 
 export async function uploadGalleryImages(target: { place_id?: string; activity_id?: string; event_id?: string }, files: File[]): Promise<void> {

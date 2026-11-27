@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { ApiError, apiFetch } from '../lib/apiClient';
-import { uploadPostImages, validateImages, fileListToArray } from '../lib/uploads';
+import { createPostWithMedia, validatePostMedia, fileListToArray, IMAGE_EXTENSIONS, VIDEO_EXTENSIONS } from '../lib/uploads';
 import { useAuth } from '../auth/AuthContext';
 import ImageCarousel from '../components/ImageCarousel';
 import Button from '../components/Button';
@@ -14,7 +14,10 @@ export default function CreatePostPage() {
   const navigate = useNavigate();
   const [caption, setCaption] = useState('');
   const [files, setFiles] = useState<File[]>([]);
+  const [video, setVideo] = useState<File | null>(null);
   const [previews, setPreviews] = useState<string[]>([]);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
+  const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -29,18 +32,44 @@ export default function CreatePostPage() {
     return { place_id, activity_id, event_id, chips };
   }, [searchParams]);
 
+  function kindOf(f: File): 'image' | 'video' | null {
+    if (f.type.startsWith('image/')) return 'image';
+    if (f.type.startsWith('video/')) return 'video';
+    const ext = f.name.split('.').pop()?.toLowerCase() ?? '';
+    if (IMAGE_EXTENSIONS.includes(ext)) return 'image';
+    if (VIDEO_EXTENSIONS.includes(ext)) return 'video';
+    return null;
+  }
+
   function onFiles(e: React.ChangeEvent<HTMLInputElement>) {
     const list = fileListToArray(e.target.files);
+    e.target.value = '';
     if (list.length === 0) return;
-    // combine with existing
-    const combined = [...files, ...list];
-    const validation = validateImages(combined);
+    const rejected = list.find((f) => kindOf(f) === null);
+    if (rejected) {
+      setError(`${rejected.name} is not a supported image or video.`);
+      return;
+    }
+    const pickedImages = list.filter((f) => kindOf(f) === 'image');
+    const pickedVideos = list.filter((f) => kindOf(f) === 'video');
+    if (!video && pickedVideos.length > 1) {
+      setError('Only one video can be attached.');
+      return;
+    }
+    const combined = [...files, ...pickedImages];
+    const nextVideo = video ?? pickedVideos[0] ?? null;
+    const validation = validatePostMedia(combined, nextVideo);
     if (validation) {
       setError(validation);
       return;
     }
     setError(null);
     setFiles(combined);
+    if (!video && pickedVideos[0]) {
+      if (videoPreview) URL.revokeObjectURL(videoPreview);
+      setVideo(pickedVideos[0]);
+      setVideoPreview(URL.createObjectURL(pickedVideos[0]));
+    }
     // create object urls for preview
     const urls = combined.map((f) => URL.createObjectURL(f));
     // revoke old previews
@@ -57,47 +86,46 @@ export default function CreatePostPage() {
     setPreviews(nextPreviews);
   }
 
+  function removeVideo() {
+    if (videoPreview) URL.revokeObjectURL(videoPreview);
+    setVideo(null);
+    setVideoPreview(null);
+  }
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!caption.trim() && files.length === 0) {
+    if (!caption.trim() && files.length === 0 && !video) {
       setError('Add a caption or at least one image.');
       return;
     }
-    const validation = files.length ? validateImages(files) : null;
+    const validation = validatePostMedia(files, video);
     if (validation) {
       setError(validation);
       return;
     }
     setBusy(true);
     setError(null);
+    setProgress(null);
     try {
       const payload: Record<string, unknown> = { caption: caption.trim() };
       if (context.place_id) payload.place_id = context.place_id;
       if (context.activity_id) payload.activity_id = context.activity_id;
       if (context.event_id) payload.event_id = context.event_id;
 
-      const res = await apiFetch<{ post_id: string } | { id: string } | string>('/post/create', {
-        method: 'POST',
-        json: payload,
-      });
-      let postId: string | null = null;
-      if (typeof res === 'string') postId = res;
-      else if (res && typeof res === 'object') {
-        const r = res as Record<string, unknown>;
-        postId = (r.post_id as string) ?? (r.id as string) ?? (r.postId as string) ?? null;
-      }
-      // if backend returns success wrapper without id, list may be needed - try to extract from data
-      if (postId && files.length > 0) {
-        await uploadPostImages(postId, files);
-      } else if (!postId && files.length > 0) {
-        // fallback: try to upload anyway if postId unknown - warn
-        // attempt sequential upload if we can guess? just skip
+      if (files.length === 0 && !video) {
+        await apiFetch('/post/create', { method: 'POST', json: payload });
+      } else {
+        // caption + images[]/video go up in one multipart call with progress
+        setProgress(0);
+        await createPostWithMedia(payload, { images: files, video }, (r) => setProgress(r));
       }
       // cleanup previews
       previews.forEach((u) => URL.revokeObjectURL(u));
+      if (videoPreview) URL.revokeObjectURL(videoPreview);
       navigate('/feed', { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Could not create post.');
+      setProgress(null);
     } finally {
       setBusy(false);
     }
@@ -141,10 +169,10 @@ export default function CreatePostPage() {
 
           <div className={styles.uploadRow}>
             <label className={styles.fileLabel}>
-              <input type="file" accept="image/*" multiple onChange={onFiles} hidden />
-              <span className={styles.fileBtn}>＋ Add images</span>
+              <input type="file" accept="image/*,video/*" multiple onChange={onFiles} hidden disabled={busy} />
+              <span className={styles.fileBtn}>＋ Add photos / video</span>
             </label>
-            <span className={styles.hint}>Up to 5 images, 10MB each</span>
+            <span className={styles.hint}>Up to 5 images + 1 video (10MB / 50MB)</span>
           </div>
 
           {previews.length > 0 && (
@@ -154,11 +182,37 @@ export default function CreatePostPage() {
                 {files.map((f, i) => (
                   <span key={i} className={styles.fileTag}>
                     {f.name}
-                    <button type="button" onClick={() => removeFile(i)} aria-label="Remove image">
+                    <button type="button" onClick={() => removeFile(i)} aria-label="Remove image" disabled={busy}>
                       ×
                     </button>
                   </span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {videoPreview && video && (
+            <div className={styles.previewWrap}>
+              <video src={videoPreview} controls className={styles.videoPreview} />
+              <div className={styles.fileList}>
+                <span className={styles.fileTag}>
+                  {video.name}
+                  <button type="button" onClick={removeVideo} aria-label="Remove video" disabled={busy}>
+                    ×
+                  </button>
+                </span>
+              </div>
+            </div>
+          )}
+
+          {busy && progress !== null && (
+            <div className={styles.progressWrap} role="status" aria-label="Upload progress">
+              <div className={styles.progressMeta}>
+                <span>Uploading media…</span>
+                <span>{Math.round(progress * 100)}%</span>
+              </div>
+              <div className={styles.progressTrack}>
+                <div className={styles.progressFill} style={{ width: `${Math.round(progress * 100)}%` }} />
               </div>
             </div>
           )}
@@ -170,7 +224,7 @@ export default function CreatePostPage() {
           )}
 
           <Button type="submit" variant="primary" size="lg" fullWidth disabled={busy}>
-            {busy ? 'Publishing…' : 'Publish post'}
+            {busy ? (progress !== null ? `Uploading… ${Math.round(progress * 100)}%` : 'Publishing…') : 'Publish post'}
           </Button>
         </form>
       </div>

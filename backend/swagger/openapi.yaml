@@ -739,7 +739,7 @@ paths:
       requestBody:
         required: true
         content:
-          application/x-www-form-urlencoded:
+          multipart/form-data:
             schema:
               type: object
               properties:
@@ -753,6 +753,15 @@ paths:
                 activity_id:
                   type: string
                   format: uuid
+                images:
+                  type: array
+                  maxItems: 5
+                  items:
+                    type: string
+                    format: binary
+                video:
+                  type: string
+                  format: binary
       responses:
         '200':
           description: Post created

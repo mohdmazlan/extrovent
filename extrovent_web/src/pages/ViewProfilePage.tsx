@@ -9,6 +9,7 @@ import Skeleton from '../components/Skeleton';
 import Button from '../components/Button';
 import EmptyState from '../components/EmptyState';
 import { listUserPosts } from '../lib/posts';
+import { mediaUrl } from '../lib/apiClient';
 import type { Post } from '../lib/posts';
 import styles from './ViewProfilePage.module.scss';
 
@@ -149,7 +150,7 @@ export default function ViewProfilePage() {
             {posts.map((p) => (
               <div key={p.post_id} className={styles.postCard}>
                 {p.caption && <p className={styles.postCaption}>{p.caption}</p>}
-                {p.banner && <img src={p.banner} alt="" className={styles.postImage} style={{ width: '100%', borderRadius: 8 }} />}
+                {p.banner && <img src={mediaUrl(p.banner)} alt="" className={styles.postImage} style={{ width: '100%', borderRadius: 8 }} />}
                 <div className={styles.postMeta}>
                   <span>♥ {p.total_likes ?? 0}</span>
                   <span>💬 {p.total_comment ?? 0}</span>

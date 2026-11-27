@@ -168,6 +168,70 @@ export async function apiFetch<T>(path: string, options: ApiOptions = {}): Promi
   }
 }
 
+export interface UploadProgress {
+  loaded: number;
+  total: number;
+  ratio: number;
+}
+
+function authHeaders(): Record<string, string> {
+  try {
+    const raw = localStorage.getItem('access_token');
+    if (raw && validateToken(raw)) return { Authorization: `Bearer ${raw}` };
+  } catch {}
+  return {};
+}
+
+// POST multipart/form-data with upload progress (fetch exposes no upload progress events).
+// Parses the same {success, data, error} envelope and retries once after a token refresh on 401.
+export function apiUpload<T>(path: string, formData: FormData, onProgress?: (p: UploadProgress) => void): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const attempt = (retried: boolean) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', apiUrl(path));
+      const headers = authHeaders();
+      Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) onProgress({ loaded: e.loaded, total: e.total, ratio: e.total > 0 ? e.loaded / e.total : 0 });
+        };
+      }
+      xhr.onload = () => {
+        let body: Envelope<T> | null = null;
+        try { body = JSON.parse(xhr.responseText) as Envelope<T>; } catch { body = null; }
+        if (xhr.status === 401 && !retried && !path.includes('/auth/refresh')) {
+          void refreshTokens().then((newToken) => {
+            if (newToken) attempt(true);
+            else { clearTokens(); onAuthFailure(); reject(new ApiError(body?.error ?? 'Unauthorized', 401, body?.data)); }
+          }).catch(() => reject(new ApiError('Network error during upload', 0)));
+          return;
+        }
+        if (xhr.status < 200 || xhr.status >= 300 || !body || body.success === false) {
+          reject(new ApiError(body?.error ?? `Request failed (HTTP ${xhr.status})`, xhr.status, body?.data));
+          return;
+        }
+        if (onProgress) onProgress({ loaded: 1, total: 1, ratio: 1 });
+        resolve(body.data as T);
+      };
+      xhr.onerror = () => reject(new ApiError('Network error during upload', 0));
+      xhr.onabort = () => reject(new ApiError('Upload cancelled', 0));
+      xhr.send(formData);
+    };
+    attempt(false);
+  });
+}
+
+// Resolve a stored media path (e.g. "uploads/<userId>/...") to an absolute URL.
+// Absolute, data: and blob: URLs pass through unchanged.
+export function mediaUrl(path: string | null | undefined): string {
+  if (!path) return '';
+  const p = String(path).trim();
+  if (!p) return '';
+  if (/^(https?:)?\/\//i.test(p) || p.startsWith('data:') || p.startsWith('blob:')) return p;
+  let origin = '';
+  try { origin = new URL(apiUrl('/')).origin; } catch { origin = ''; }
+  return origin ? `${origin}/${p.replace(/^\//, '')}` : p;
+}
 // keep-alive: 5m sliding window (merpati/web/src/api/client.ts:94)
 if (typeof window !== 'undefined') {
   let keepAliveTimer: number | null = null;

@@ -62,10 +62,8 @@ class UserService
                 'user_id' => $id,
                 'password_hash' => $hashedPassword,
             ]);
-            $uploadDir = __DIR__ . '/../../uploads';
+            $uploadDir = __DIR__ . '/../../storage';
             if (!is_dir($uploadDir . "/{$id}")) mkdir($uploadDir . "/{$id}", 0755, true);
-            // also keep legacy user_id dir for compat
-            if (!is_dir($uploadDir . "/{$username}")) @mkdir($uploadDir . "/{$username}", 0755, true);
             return ['id' => $id, 'user_id' => $id, 'username' => $username, 'success' => true];
         } catch (\PDOException $e) {
             $code = (int) ($e->errorInfo[1] ?? 0);

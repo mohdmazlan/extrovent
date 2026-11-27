@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, memo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toggleLike } from '../lib/posts';
+import { mediaUrl } from '../lib/apiClient';
 import type { Post } from '../lib/posts';
 import Avatar from './Avatar';
 import Comments from './Comments';
@@ -42,7 +43,7 @@ function isInteractive(target: EventTarget | null): boolean {
   return target instanceof Element && !!target.closest('a, button, video');
 }
 
-function getPostImages(
+function getPostImageList(
   post: Post & { images?: string[]; image_urls?: string[]; media_type?: string; type?: string; video?: string },
 ): string[] {
   if (Array.isArray(post.images) && post.images.length > 0) return post.images.filter(Boolean);
@@ -61,6 +62,12 @@ function getPostImages(
     }
   }
   return [raw];
+}
+
+function getPostImages(
+  post: Post & { images?: string[]; image_urls?: string[]; media_type?: string; type?: string; video?: string },
+): string[] {
+  return getPostImageList(post).map(mediaUrl).filter((u) => u.length > 0);
 }
 
 interface Props {

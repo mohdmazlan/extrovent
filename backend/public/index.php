@@ -108,6 +108,12 @@ function dispatch(string $method, string $path, RequestParser $request, Response
         return;
     }
 
+    // Namespaced user media (storage/<userId>/...) - handled by serveStorage which calls exit
+    if (str_starts_with($path, 'storage/')) {
+        serveStorage(substr($path, 8), $response);
+        return;
+    }
+
     // Route table: [path => ['service_class', 'method', 'requires_auth']]
     $routes = [
         // Auth routes
@@ -322,6 +328,10 @@ function buildMethodArgs(string $serviceClass, string $methodName, RequestParser
         elseif ($name === 'data') {
             $args[] = $request->all();
         }
+        // Inject uploaded files for multipart endpoints (e.g. post/create with images[]/video)
+        elseif ($name === 'files') {
+            $args[] = $request->getAllFiles();
+        }
         // Inject specific IDs from request (entity ids are UUID strings — no int cast)
         elseif (in_array($name, ['eventId', 'event_id']) || stripos($name, 'event') !== false) {
             $val = $request->get('event_id');
@@ -416,6 +426,26 @@ function serveUpload(string $path, ResponseFormatter $response): void
     exit;
 }
 
+/**
+ * Serve namespaced user media (storage/<userId>/<category>/...).
+ */
+function serveStorage(string $path, ResponseFormatter $response): void
+{
+    $basePath = __DIR__ . '/../storage';
+    $filePath = $basePath . '/' . ltrim($path, '/');
+
+    if (!file_exists($filePath)) {
+        $response->error('File not found', 404);
+        $response->send();
+        return;
+    }
+
+    // Determine MIME type and send
+    $mime = mime_content_type($filePath) ?: 'application/octet-stream';
+    header("Content-Type: {$mime}");
+    readfile($filePath);
+    exit;
+}
 /**
  * Handle /auth/refresh endpoint - refreshes access token using refresh token.
  */

@@ -4,6 +4,10 @@
 # Uploads (local filesystem, not in public)
 uploads/
 
+# Namespaced user media (storage/<userId>/...) - local filesystem
+storage/*
+!storage/.gitkeep
+
 # Composer
 vendor/
 composer.lock

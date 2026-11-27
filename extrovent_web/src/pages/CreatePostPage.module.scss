@@ -149,3 +149,37 @@
   border-radius: $radius-md;
   font-size: $fs-sm;
 }
+.videoPreview {
+  width: 100%;
+  max-height: 320px;
+  border-radius: $radius-md;
+  background: #000;
+}
+
+.progressWrap {
+  display: grid;
+  gap: 6px;
+}
+
+.progressMeta {
+  display: flex;
+  justify-content: space-between;
+  font-size: $fs-xs;
+  color: var(--text-muted);
+}
+
+.progressTrack {
+  height: 8px;
+  border-radius: $radius-full;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  width: 0;
+  border-radius: $radius-full;
+  @include extrovent-gradient;
+  transition: width 150ms ease;
+}
